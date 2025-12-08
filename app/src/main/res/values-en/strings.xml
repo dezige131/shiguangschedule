@@ -291,6 +291,20 @@
     <string name="item_contributors">Contributors list</string>
     <string name="label_version_prefix">Version: %1$s</string>
     <string name="default_app_name">Unknown app</string>
+    <string name="item_check_software_update">Check for Software Updates</string>
+
+    <string name="dialog_checking_update">Checking for update...</string>
+    <string name="tip_please_wait">Connecting to server, please wait.</string>
+
+    <string name="dialog_new_version_found">New version found %s</string>
+    <string name="dialog_current_version_latest">Current version is the latest</string>
+    <string name="dialog_update_check_failed">Update check failed</string>
+    <string name="label_error_message">Error message: %s</string>
+    <string name="btn_download_update">Download update</string>
+    <string name="btn_update_now">Update now</string>
+    <string name="tip_non_mandatory_update">Tip: The cancel button is not shown for mandatory updates.</string>
+    <string name="dialog_select_update_channel">Select update channel</string>
+    <string name="a11y_selected">Selected</string>
     
     <!-- Schedule Adjustment -->
     <string name="title_tweak_schedule">Schedule adjustment</string>

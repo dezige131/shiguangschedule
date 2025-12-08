@@ -290,7 +290,21 @@
     <string name="item_contributors">貢獻者清單</string>
     <string name="label_version_prefix">版本: %1$s</string>
     <string name="default_app_name">未知應用程式</string>
-    
+    <string name="item_check_software_update">檢查軟體更新</string>
+
+    <string name="dialog_checking_update">正在檢查更新...</string>
+    <string name="tip_please_wait">正在連線伺服器，請稍候。</string>
+
+    <string name="dialog_new_version_found">發現新版本 %s</string>
+    <string name="dialog_current_version_latest">目前版本已是最新</string>
+    <string name="dialog_update_check_failed">更新檢查失敗</string>
+    <string name="label_error_message">錯誤資訊：%s</string>
+    <string name="btn_download_update">下載更新</string>
+    <string name="btn_update_now">立即更新</string>
+    <string name="tip_non_mandatory_update">提示：強制更新不會顯示此取消按鈕。</string>
+    <string name="dialog_select_update_channel">選擇更新渠道</string>
+    <string name="a11y_selected">已選中</string>
+
     <!-- 課程調動 -->
     <string name="title_tweak_schedule">調課</string>
     <string name="a11y_save_tweak">儲存調課變更</string>

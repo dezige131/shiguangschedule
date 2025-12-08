@@ -41,6 +41,9 @@ android {
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
 
+            // 环境标识变量
+            buildConfigField("String", "CURRENT_FLAVOR_ID", "\"dev\"")
+
             // 注入开关：开发者版本不隐藏，显示自定义/私有仓库
             buildConfigField("Boolean", "HIDE_CUSTOM_REPOS", "false")
             // 注入开关：开发者版本关闭基准灯塔标签验证
@@ -58,6 +61,8 @@ android {
         create("prod") {
             dimension = "version"
 
+            // 环境标识变量
+            buildConfigField("String", "CURRENT_FLAVOR_ID", "\"prod\"")
             // 注入开关：正式版本隐藏自定义/私有仓库
             buildConfigField("Boolean", "HIDE_CUSTOM_REPOS", "true")
             // 注入开关：正式版本开启基准灯塔标签验证
