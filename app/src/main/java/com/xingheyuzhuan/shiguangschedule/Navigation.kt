@@ -40,8 +40,9 @@ sealed class Screen(val route: String) {
         fun createRouteWithCourseId(courseId: String): String {
             return "add_edit_course_route/$courseId"
         }
-        fun createRouteForNewCourse(day: Int, section: Int): String {
-            return "add_edit_course_route?day=$day&section=$section"
+        // 路由只需要导航到页面本身，并传递 null 占位符。
+        fun createRouteForNewCourse(): String {
+            return "add_edit_course_route/null"
         }
     }
 
@@ -54,4 +55,17 @@ sealed class Screen(val route: String) {
     object TweakSchedule : Screen("tweak_schedule")
 
     object ContributionList : Screen("contribution_list")
+
+    object CourseManagementList : Screen("course_management_list")
+
+    object CourseManagementDetail : Screen("course_management_detail/{courseName}") {
+        /**
+         * 创建二级页面的路由。
+         * 课程名称需要进行 URI 编码，以防包含特殊字符。
+         */
+        fun createRoute(courseName: String): String {
+            val encodedCourseName = Uri.encode(courseName)
+            return "course_management_detail/$encodedCourseName"
+        }
+    }
 }

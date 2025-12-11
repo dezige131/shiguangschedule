@@ -14,6 +14,8 @@
     <string name="title_loading">載入中...</string>
     <string name="text_error">錯誤</string>
     <string name="label_none">無</string>
+    <string name="action_select_all">全選</string>
+    <string name="action_deselect_all">取消全選</string>
     
     <!-- 主介面及今日課表 -->
     <string name="nav_today_schedule">今日課表</string>
@@ -40,7 +42,6 @@
     <string name="label_end_section">結束節次</string>
     <string name="toast_time_invalid">開始節次不能大於結束節次</string>
     <string name="label_course_weeks">上課週次</string>
-    <string name="action_select_all">全選</string>
     <string name="action_single_week">單週</string>
     <string name="action_double_week">雙週</string>
     <string name="label_course_color">課程顏色</string>
@@ -215,6 +216,17 @@
     <string name="toast_delete_table_success">%1$s 已刪除</string>
     <string name="toast_delete_last_table_failed">不能刪除最後一個課表</string>
     <string name="a11y_current_table">目前課表</string>
+    <string name="item_course_management">課程管理</string>
+    <string name="desc_course_management">按名稱查看和編輯所有課程</string>
+
+    <!-- 課程管理 -->
+    <string name="title_selected_items_count">已選擇 %1$d 項</string>
+    <string name="text_no_unique_courses_hint">目前課表暫無課程資料</string>
+    <string name="a11y_cancel_selection">取消多選</string>
+    <string name="a11y_exit_selection_mode">退出選擇模式</string>
+    <string name="a11y_enter_selection_mode">進入選擇模式</string>
+    <string name="a11y_not_selected">未選中</string>
+    <string name="label_weeks_format">週次: %1$s</string>
 
     <!-- 時間段管理 -->
     <string name="title_time_slot_management">時間段管理</string>
@@ -365,6 +377,7 @@
     <string name="toast_load_import_script_failed">載入匯入指令碼失敗: %1$s</string>
     <string name="toast_no_import_script">該適配器沒有匯入指令碼</string>
     <string name="toast_import_script_finished">匯入指令碼執行完畢，返回課表頁面。</string>
+    <string name="dialog_ssl_error_title">SSL 憑證錯誤</string>
     <string name="dialog_ssl_error_message">SSL憑證驗證失敗，這可能意味著連線不安全。是否繼續瀏覽？</string>
     <string name="action_continue_browsing">繼續瀏覽</string>
     <string name="toast_ssl_error_cancelled">SSL憑證驗證失敗，已取消連線。</string>

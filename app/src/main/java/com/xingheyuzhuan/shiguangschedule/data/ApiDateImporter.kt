@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -44,11 +43,7 @@ object ApiDateImporter {
     private const val BASE_URL = "https://timor.tech/api/holiday/"
 
     private fun createOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val newRequest = originalRequest.newBuilder()
@@ -59,8 +54,9 @@ object ApiDateImporter {
                     .build()
                 chain.proceed(newRequest)
             }
-            .addInterceptor(loggingInterceptor)
-            .build()
+        builder.addDebugInterceptor()
+
+        return builder.build()
     }
 
     private val retrofit = Retrofit.Builder()

@@ -25,14 +25,10 @@ import com.xingheyuzhuan.shiguangschedule.R
 fun AddEditCourseScreen(
     courseId: String?,
     onNavigateBack: () -> Unit,
-    initialDay: Int?,
-    initialSection: Int?
 ) {
     val viewModel: AddEditCourseViewModel = viewModel(
         factory = AddEditCourseViewModel.Factory(
             courseId = courseId,
-            initialDay = initialDay,
-            initialSection = initialSection
         )
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -157,7 +153,7 @@ fun AddEditCourseScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ⭐ 导入 TimeSelectors.kt 中的组件
+            // 导入 TimeSelectors.kt 中的组件
             TimeAreaSelector(
                 day = uiState.day,
                 startSection = uiState.startSection,
@@ -167,9 +163,7 @@ fun AddEditCourseScreen(
                 customStartTime = uiState.customStartTime,
                 customEndTime = uiState.customEndTime,
                 onIsCustomTimeChange = viewModel::onIsCustomTimeChange,
-                // Section Mode Click
                 onSectionButtonClick = { showSectionTimeDialog = true },
-                // Custom Time Clicks (设置各自的 Dialog 状态)
                 onDayClick = { showDayDialog = true },
                 onStartTimeClick = { showStartTimeDialog = true },
                 onEndTimeClick = { showEndTimeDialog = true }

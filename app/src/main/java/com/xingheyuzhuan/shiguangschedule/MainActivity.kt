@@ -33,7 +33,10 @@ import com.xingheyuzhuan.shiguangschedule.ui.settings.tweaks.TweakScheduleScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.update.UpdateRepoScreen
 import com.xingheyuzhuan.shiguangschedule.ui.theme.shiguangscheduleTheme
 import com.xingheyuzhuan.shiguangschedule.ui.today.TodayScheduleScreen
-
+import com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement.CourseNameListScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement.CourseInstanceListScreen
+import android.net.Uri
+import com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement.COURSE_NAME_ARG
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -194,37 +197,11 @@ fun AppNavigation() {
             popExitTransition = { ExitTransition.None }
         ) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getString("courseId")
+
+            // 路由参数只处理 courseId (Add/Edit 模式)。
             AddEditCourseScreen(
                 courseId = courseId,
                 onNavigateBack = { navController.popBackStack() },
-                initialDay = -1,
-                initialSection = -1
-            )
-        }
-        composable(
-            route = "add_edit_course_route?day={day}&section={section}",
-            arguments = listOf(
-                navArgument("day") {
-                    type = NavType.IntType
-                    defaultValue = -1
-                },
-                navArgument("section") {
-                    type = NavType.IntType
-                    defaultValue = -1
-                }
-            ),
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None }
-        ) { backStackEntry ->
-            val initialDay = backStackEntry.arguments?.getInt("day")
-            val initialSection = backStackEntry.arguments?.getInt("section")
-            AddEditCourseScreen(
-                courseId = null,
-                initialDay = initialDay,
-                initialSection = initialSection,
-                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(
@@ -280,6 +257,36 @@ fun AppNavigation() {
             popExitTransition = { ExitTransition.None }
         ) {
             ContributionScreen(navController = navController)
+        }
+        // 课程管理 - 一级页面：课程名称列表
+        composable(
+            Screen.CourseManagementList.route,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) {
+            // CourseNameListScreen 负责显示不重复的课程名称
+            CourseNameListScreen(navController = navController)
+        }
+
+        // 课程管理 - 二级页面：课程实例网格
+        composable(
+            route = Screen.CourseManagementDetail.route,
+            arguments = listOf(
+                navArgument(COURSE_NAME_ARG) { type = NavType.StringType }
+            ),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) { backStackEntry ->
+            val courseName = Uri.decode(backStackEntry.arguments?.getString(COURSE_NAME_ARG) ?: "")
+            CourseInstanceListScreen(
+                courseName = courseName,
+                onNavigateBack = { navController.popBackStack() },
+                navController = navController
+            )
         }
     }
 }

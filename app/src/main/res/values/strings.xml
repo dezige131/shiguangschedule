@@ -14,6 +14,8 @@
     <string name="title_loading">加载中...</string>
     <string name="text_error">错误</string>
     <string name="label_none">无</string>
+    <string name="action_select_all">全选</string>
+    <string name="action_deselect_all">取消全选</string>
     
     <!-- 主界面及今日课表 -->
     <string name="nav_today_schedule">今日课表</string>
@@ -40,7 +42,6 @@
     <string name="label_end_section">结束节次</string>
     <string name="toast_time_invalid">开始节次不能大于结束节次</string>
     <string name="label_course_weeks">上课周次</string>
-    <string name="action_select_all">全选</string>
     <string name="action_single_week">单周</string>
     <string name="action_double_week">双周</string>
     <string name="label_course_color">课程颜色</string>
@@ -215,6 +216,17 @@
     <string name="toast_delete_table_success">%1$s 已删除</string>
     <string name="toast_delete_last_table_failed">不能删除最后一个课表</string>
     <string name="a11y_current_table">当前课表</string>
+    <string name="item_course_management">课程管理</string>
+    <string name="desc_course_management">按名称查看和编辑所有课程</string>
+
+    <!-- 管理课程 -->
+    <string name="title_selected_items_count">已选择 %1$d 项</string>
+    <string name="text_no_unique_courses_hint">当前课表暂无课程数据</string>
+    <string name="a11y_cancel_selection">取消多选</string>
+    <string name="a11y_exit_selection_mode">退出选择模式</string>
+    <string name="a11y_enter_selection_mode">进入选择模式</string>
+    <string name="a11y_not_selected">未选中</string>
+    <string name="label_weeks_format">周次: %1$s</string>
 
     <!-- 时间段管理 -->
     <string name="title_time_slot_management">时间段管理</string>
@@ -365,6 +377,7 @@
     <string name="toast_load_import_script_failed">加载导入脚本失败: %1$s</string>
     <string name="toast_no_import_script">该适配器没有导入脚本</string>
     <string name="toast_import_script_finished">导入脚本执行完毕，返回课表页面。</string>
+    <string name="dialog_ssl_error_title">SSL 证书错误</string>
     <string name="dialog_ssl_error_message">SSL证书验证失败，这可能意味着连接不安全。是否继续浏览？</string>
     <string name="action_continue_browsing">继续浏览</string>
     <string name="toast_ssl_error_cancelled">SSL证书验证失败，已取消连接。</string>

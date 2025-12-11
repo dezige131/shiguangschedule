@@ -70,6 +70,13 @@ interface CourseDao {
     suspend fun deleteById(courseId: String)
 
     /**
+     * 批量删除指定的课程ID列表。
+     * 依赖 ForeignKey.CASCADE，此操作会同时删除关联的 course_weeks 记录。
+     */
+    @Query("DELETE FROM courses WHERE id IN (:courseIds)")
+    suspend fun deleteCoursesByIds(courseIds: List<String>)
+
+    /**
      * 删除指定课表ID下的所有课程。
      * 这是支持覆盖导入功能的关键方法。
      */
@@ -110,4 +117,11 @@ interface CourseDao {
      */
     @Query("UPDATE courses SET colorInt = :newColorInt WHERE id = :courseId")
     suspend fun updateCourseColorById(courseId: String, newColorInt: Int)
+
+    /**
+     * 批量删除指定课表下、指定名称的所有课程记录。
+     * 启用级联删除后，此操作会自动删除关联的 course_weeks 记录。
+     */
+    @Query("DELETE FROM courses WHERE courseTableId = :tableId AND name IN (:courseNames)")
+    suspend fun deleteCoursesByNames(tableId: String, courseNames: List<String>)
 }

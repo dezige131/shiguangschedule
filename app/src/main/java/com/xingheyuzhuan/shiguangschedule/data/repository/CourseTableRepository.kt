@@ -118,6 +118,30 @@ class CourseTableRepository(
     }
 
     /**
+     * 批量删除指定 ID 列表的课程实例。
+     *
+     * @param courseIds 要删除的课程的唯一ID列表。
+     */
+    suspend fun deleteCoursesByIds(courseIds: List<String>) {
+        if (courseIds.isEmpty()) return
+        courseDao.deleteCoursesByIds(courseIds)
+    }
+
+    /**
+     * 批量删除指定课表下、指定名称的所有课程实例及其关联的周次记录。
+     *
+     * 依赖 Room 的 ForeignKey.CASCADE (在 CourseWeek 实体中定义)，
+     * 此方法只需删除 Course 记录，CourseWeek 记录将自动被清理。
+     *
+     * @param tableId 课表的唯一ID。
+     * @param courseNames 需要删除的课程名称列表。
+     */
+    suspend fun deleteCoursesByNames(tableId: String, courseNames: List<String>) {
+        if (courseNames.isEmpty() || tableId.isBlank()) return
+        courseDao.deleteCoursesByNames(tableId, courseNames)
+    }
+
+    /**
      * 将指定日期（由星期和周次确定）下的所有课程调动到新日期。
      * 这是一个原子操作，确保数据一致性。
      *

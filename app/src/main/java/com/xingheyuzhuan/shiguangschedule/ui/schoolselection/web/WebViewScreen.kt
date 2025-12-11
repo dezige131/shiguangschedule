@@ -1,7 +1,6 @@
 package com.xingheyuzhuan.shiguangschedule.ui.schoolselection.web
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.net.http.SslError
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -30,6 +29,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -64,7 +64,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.xingheyuzhuan.shiguangschedule.BuildConfig
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionRepository
@@ -110,6 +109,10 @@ fun WebViewScreen(
 
     var isDevToolsEnabled by remember { mutableStateOf(false) }
     var showCourseTablePicker by remember { mutableStateOf(false) }
+
+    var sslErrorHandleState by remember {
+        mutableStateOf<Pair<SslErrorHandler, SslError>?>(null)
+    }
 
     // --- DevTools 逻辑 ---
     val enableDevToolsOptionInUi = BuildConfig.ENABLE_DEV_TOOLS_OPTION_IN_UI
@@ -172,21 +175,7 @@ fun WebViewScreen(
 
                 @SuppressLint("WebViewClientOnReceivedSslError")
                 override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-                    (context as? Activity)?.let { activity ->
-                        MaterialAlertDialogBuilder(activity)
-                            .setMessage(context.getString(R.string.dialog_ssl_error_message))
-                            .setPositiveButton(context.getString(R.string.action_continue_browsing)) { _, _ ->
-                                handler.proceed()
-                            }
-                            .setNegativeButton(context.getString(R.string.action_cancel)) { _, _ ->
-                                handler.cancel()
-                            }
-                            .setCancelable(false)
-                            .show()
-                    } ?: run {
-                        Toast.makeText(context, context.getString(R.string.toast_ssl_error_cancelled), Toast.LENGTH_LONG).show()
-                        handler.cancel()
-                    }
+                    sslErrorHandleState = Pair(handler, error)
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -287,7 +276,7 @@ fun WebViewScreen(
                             placeholder = { Text(stringResource(R.string.placeholder_enter_url_full)) },
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                             keyboardActions = KeyboardActions(
-                                onGo = { ->
+                                onGo = {
                                     onSearch(inputUrl)
                                     isEditingUrl = false
                                 }
@@ -479,6 +468,40 @@ fun WebViewScreen(
                             }
                         } ?: run {
                             Toast.makeText(context, context.getString(R.string.toast_no_import_script), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                )
+            }
+
+            sslErrorHandleState?.let { (handler, error) ->
+                AlertDialog(
+                    onDismissRequest = {
+                        // 如果用户点击对话框外部，取消连接
+                        handler.cancel()
+                        sslErrorHandleState = null
+                    },
+                    title = { Text(stringResource(R.string.dialog_ssl_error_title)) },
+                    text = { Text(stringResource(R.string.dialog_ssl_error_message)) },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                // 继续浏览
+                                handler.proceed()
+                                sslErrorHandleState = null
+                            }
+                        ) {
+                            Text(stringResource(R.string.action_continue_browsing))
+                        }
+                    },
+                    dismissButton = {
+                        Button(
+                            onClick = {
+                                // 取消浏览
+                                handler.cancel()
+                                sslErrorHandleState = null
+                            }
+                        ) {
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )

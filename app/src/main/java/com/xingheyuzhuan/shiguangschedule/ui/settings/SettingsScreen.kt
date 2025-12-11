@@ -332,6 +332,13 @@ private fun AdvancedSettingsSection(navController: NavHostController) {
                 onClick = { navController.navigate(Screen.ManageCourseTables.route) }
             )
 
+            // 课程管理设置项
+            SettingItem(
+                title = stringResource(R.string.item_course_management),
+                subtitle = stringResource(R.string.desc_course_management),
+                onClick = { navController.navigate(Screen.CourseManagementList.route) }
+            )
+
             // 自定义时间段设置项
             SettingItem(
                 title = stringResource(R.string.item_time_slot_customization),

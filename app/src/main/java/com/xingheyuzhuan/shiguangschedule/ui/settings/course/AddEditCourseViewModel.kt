@@ -27,14 +27,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
+import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
 
 class AddEditCourseViewModel(
     private val courseTableRepository: CourseTableRepository,
     private val timeSlotRepository: TimeSlotRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val courseId: String?,
-    private val initialDay: Int?,
-    private val initialSection: Int?,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditCourseUiState())
@@ -45,17 +45,25 @@ class AddEditCourseViewModel(
 
     init {
         viewModelScope.launch {
-            // 获取 appSettings 的数据流
+
+            val initialPresetData: PresetCourseData? = if (courseId == null) {
+                try {
+                    AddEditCourseChannel.presetDataFlow.first()
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+
             val appSettingsFlow = appSettingsRepository.getAppSettings()
 
-            // 使用 flatMapLatest 监听 appSettings 的变化，并根据当前课表 ID 获取对应的时间段
             @OptIn(ExperimentalCoroutinesApi::class)
             val timeSlotsFlow = appSettingsFlow.flatMapLatest { settings ->
                 val courseTableId = settings.currentCourseTableId
                 if (courseTableId != null) {
                     timeSlotRepository.getTimeSlotsByCourseTableId(courseTableId)
                 } else {
-                    // 如果没有设置课表 ID，则返回空列表
                     flowOf(emptyList())
                 }
             }
@@ -66,7 +74,6 @@ class AddEditCourseViewModel(
                 if (courseTableId != null) {
                     appSettingsRepository.getCourseTableConfigFlow(courseTableId)
                 } else {
-                    // 如果没有设置课表 ID，则返回 null
                     flowOf(null)
                 }
             }
@@ -97,12 +104,12 @@ class AddEditCourseViewModel(
                             id = UUID.randomUUID().toString(),
                             courseTableId = appSettings.currentCourseTableId.orEmpty(),
                             name = "", teacher = "", position = "",
-                            day = initialDay ?: 1,
-                            startSection = initialSection ?: 1,
-                            endSection = initialSection ?: 1,
-                            isCustomTime = false, // 默认使用节次
-                            customStartTime = null, // 默认无自定义时间
-                            customEndTime = null,   // 默认无自定义时间
+                            day = 1,
+                            startSection = 1,
+                            endSection = 1,
+                            isCustomTime = false,
+                            customStartTime = null,
+                            customEndTime = null,
                             colorInt = newColorIndex
                         )
                         Pair(newCourse, newColorIndex)
@@ -110,7 +117,6 @@ class AddEditCourseViewModel(
                         val existingCourse = courseWithWeeks?.course
                         val existingColorIndex = existingCourse?.colorInt
 
-                        // 验证索引是否在有效范围内，如果不在则随机选择
                         val validatedIndex = if (existingColorIndex != null && existingColorIndex >= 0 && existingColorIndex <= maxColorIndex) {
                             existingColorIndex
                         } else {
@@ -126,24 +132,25 @@ class AddEditCourseViewModel(
                         courseWithWeeks?.weeks?.map { it.weekNumber }?.toSet() ?: emptySet()
                     }
 
+                    val finalDay = initialPresetData?.day ?: course?.day ?: 1
+                    val finalStartSection = initialPresetData?.startSection ?: course?.startSection ?: 1
+                    val finalEndSection = initialPresetData?.endSection ?: course?.endSection ?: 1
+
                     currentState.copy(
                         isEditing = courseId != null,
-                        course = course, // 使用解构后的 course
-                        name = course?.name.orEmpty(),
-                        teacher = course?.teacher.orEmpty(),
-                        position = course?.position.orEmpty(),
-                        day = course?.day ?: 1,
-                        startSection = course?.startSection ?: 1,
-                        endSection = course?.endSection ?: 1,
-
+                        course = course,
+                        name = initialPresetData?.name ?: course?.name.orEmpty(),
+                        teacher = initialPresetData?.teacher ?: course?.teacher.orEmpty(),
+                        position = initialPresetData?.position ?: course?.position.orEmpty(),
+                        day = finalDay,
+                        startSection = finalStartSection,
+                        endSection = finalEndSection,
                         isCustomTime = course?.isCustomTime ?: false,
-                        // 如果是新课程或现有课程为 null，则默认为空字符串 ""
                         customStartTime = course?.customStartTime.orEmpty(),
                         customEndTime = course?.customEndTime.orEmpty(),
-
-                        colorIndex = initialColorIndex, // 使用解构后的 initialColorIndex
+                        colorIndex = initialColorIndex,
                         weeks = weeks,
-                        timeSlots = timeSlots,
+                        timeSlots = timeSlots, // 将非空的 timeSlots 列表传递给 UI 状态
                         currentCourseTableId = appSettings.currentCourseTableId,
                         semesterTotalWeeks = totalWeeks
                     )
@@ -152,7 +159,6 @@ class AddEditCourseViewModel(
         }
     }
 
-    // UI 事件处理函数
     fun onNameChange(name: String) { _uiState.update { it.copy(name = name) } }
     fun onTeacherChange(teacher: String) { _uiState.update { it.copy(teacher = teacher) } }
     fun onPositionChange(position: String) { _uiState.update { it.copy(position = position) } }
@@ -187,7 +193,6 @@ class AddEditCourseViewModel(
         viewModelScope.launch {
             val state = uiState.value
 
-            // 修正：直接存储 UI State 中当前选中的颜色索引 (Int)
             val colorIndexToSave = state.colorIndex
 
             val courseToSave = state.course?.copy(
@@ -196,17 +201,14 @@ class AddEditCourseViewModel(
                 position = state.position,
                 day = state.day,
 
-                // 如果使用自定义时间，节次字段设为 null
                 startSection = state.startSection.takeUnless { state.isCustomTime },
                 endSection = state.endSection.takeUnless { state.isCustomTime },
 
-                // 设置 isCustomTime 标志
                 isCustomTime = state.isCustomTime,
-                // 如果使用自定义时间，保存自定义时间；如果时间字符串为空，则保存 null
                 customStartTime = state.customStartTime.takeIf { state.isCustomTime && it.isNotEmpty() },
                 customEndTime = state.customEndTime.takeIf { state.isCustomTime && it.isNotEmpty() },
 
-                colorInt = colorIndexToSave, // 存储颜色索引
+                colorInt = colorIndexToSave,
                 courseTableId = state.currentCourseTableId.orEmpty()
             )
             if (courseToSave != null) {
@@ -234,7 +236,7 @@ class AddEditCourseViewModel(
     }
 
     companion object {
-        fun Factory(courseId: String?, initialDay: Int?, initialSection: Int?): ViewModelProvider.Factory =
+        fun Factory(courseId: String?): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
@@ -245,8 +247,6 @@ class AddEditCourseViewModel(
                             timeSlotRepository = application.timeSlotRepository,
                             appSettingsRepository = application.appSettingsRepository,
                             courseId = courseId,
-                            initialDay = initialDay,
-                            initialSection = initialSection
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
@@ -255,7 +255,6 @@ class AddEditCourseViewModel(
     }
 }
 
-// 用于通知 UI 的事件
 sealed interface UiEvent {
     object SaveSuccess : UiEvent
     object DeleteSuccess : UiEvent

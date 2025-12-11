@@ -14,6 +14,8 @@
     <string name="title_loading">Loading...</string>
     <string name="text_error">Error</string>
     <string name="label_none">None</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Deselect All</string>
     
     <!-- Main Interface and Today's Schedule -->
     <string name="nav_today_schedule">Today</string>
@@ -40,7 +42,6 @@
     <string name="label_end_section">End period</string>
     <string name="toast_time_invalid">Start period cannot be greater than end period</string>
     <string name="label_course_weeks">Course weeks</string>
-    <string name="action_select_all">Select all</string>
     <string name="action_single_week">Odd weeks</string>
     <string name="action_double_week">Even weeks</string>
     <string name="label_course_color">Course color</string>
@@ -59,7 +60,6 @@
     <string name="label_custom_time">Custom Time</string>
     <string name="label_start_time">Start Time</string>
     <string name="label_end_time">End Time</string>
-
 
     <!-- Course Related -->
     <string name="course_time_description">Time: Period %1$s-%2$s (%3$s-%4$s)</string>
@@ -216,6 +216,17 @@
     <string name="toast_delete_table_success">%1$s deleted</string>
     <string name="toast_delete_last_table_failed">Cannot delete the last schedule</string>
     <string name="a11y_current_table">Current schedule</string>
+    <string name="item_course_management">Course Management</string>
+    <string name="desc_course_management">View and edit all courses by name</string>
+
+    <!-- Course Management -->
+    <string name="title_selected_items_count">%1$d items selected</string>
+    <string name="text_no_unique_courses_hint">No course data available in the current schedule</string>
+    <string name="a11y_cancel_selection">Cancel multiple selection</string>
+    <string name="a11y_exit_selection_mode">Exit selection mode</string>
+    <string name="a11y_enter_selection_mode">Enter selection mode</string>
+    <string name="a11y_not_selected">Not selected</string>
+    <string name="label_weeks_format">Weeks: %1$s</string>
 
     <!-- Time Slot Management -->
     <string name="title_time_slot_management">Time period management</string>
@@ -366,6 +377,7 @@
     <string name="toast_load_import_script_failed">Failed to load import script: %1$s</string>
     <string name="toast_no_import_script">This adapter has no import script</string>
     <string name="toast_import_script_finished">Import script completed, returning to schedule page.</string>
+    <string name="dialog_ssl_error_title">SSL Certificate Error</string>
     <string name="dialog_ssl_error_message">SSL certificate verification failed, which may indicate an insecure connection. Continue browsing?</string>
     <string name="action_continue_browsing">Continue</string>
     <string name="toast_ssl_error_cancelled">SSL certificate verification failed, connection canceled.</string>

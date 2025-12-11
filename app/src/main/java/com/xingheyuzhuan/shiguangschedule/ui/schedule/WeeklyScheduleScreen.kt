@@ -24,13 +24,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.Screen
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
+import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
+import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
 import com.xingheyuzhuan.shiguangschedule.ui.components.BottomNavigationBar
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ConflictCourseBottomSheet
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGrid
@@ -42,8 +46,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
-import androidx.compose.ui.res.stringResource
-import com.xingheyuzhuan.shiguangschedule.R
 
 // Pager 的总页数和初始中心页码作为常量，便于管理
 private const val TOTAL_PAGER_WEEKS = 1000
@@ -228,10 +230,18 @@ fun WeeklyScheduleScreen(
                     val onGridCellClicked: (Int, Int) -> Unit = { day, section ->
                         val isSemesterStarted = semesterStartDate != null && !today.isBefore(semesterStartDate)
                         if (isSemesterStarted) {
-                            navController.navigate(Screen.AddEditCourse.createRouteForNewCourse(day, section))
+                            viewModel.viewModelScope.launch {
+                                AddEditCourseChannel.sendEvent(
+                                    PresetCourseData(
+                                        day = day,
+                                        startSection = section,
+                                        endSection = section
+                                    )
+                                )
+                                navController.navigate(Screen.AddEditCourse.createRouteForNewCourse())
+                            }
                         } else {
                             viewModel.viewModelScope.launch {
-                                // 【✅ 修复 3/3：使用普通变量】
                                 snackbarHostState.showSnackbar(snackbarAddCourseAfterStart)
                             }
                         }
