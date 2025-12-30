@@ -6,24 +6,26 @@ import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import com.xingheyuzhuan.shiguangschedule.widget.getWidgetCoursesAndWeekFlow
+import androidx.glance.currentState
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetSnapshot
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetStateDefinition
 
-/**
- * 这是2x1超小型课程小组件的主要逻辑文件。
- * 它负责从 Room 数据库获取数据流，并将其传递给 UI 渲染组件。
- */
 class TinyScheduleWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Exact
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val combinedFlow = getWidgetCoursesAndWeekFlow(context)
+    // 必须指定这个，否则 currentState 无法工作
+    override val stateDefinition = WidgetStateDefinition
 
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            // 直接获取当前的快照状态
+            val snapshot = currentState<WidgetSnapshot>()
+
             GlanceTheme {
-                TinyLayout(coursesAndWeekFlow = combinedFlow)
+                // 将整个快照传给 Layout
+                TinyLayout(snapshot = snapshot)
             }
         }
     }
 }
-

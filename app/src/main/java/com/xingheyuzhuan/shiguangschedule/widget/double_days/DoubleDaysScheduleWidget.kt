@@ -1,4 +1,3 @@
-// DoubleDaysScheduleWidget.kt
 package com.xingheyuzhuan.shiguangschedule.widget.double_days
 
 import android.content.Context
@@ -7,24 +6,23 @@ import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import com.xingheyuzhuan.shiguangschedule.widget.getWidgetCoursesByDatesAndWeekFlow
-import java.time.LocalDate
+import androidx.glance.currentState
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetSnapshot
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetStateDefinition
 
-/**
- * 这是一个 4x2 尺寸的小组件，用于显示今天和明天的课程。
- * 它继承自 GlanceAppWidget，作为小组件的入口点。
- */
 class DoubleDaysScheduleWidget : GlanceAppWidget() {
 
+    // 关键：指定快照状态定义
+    override val stateDefinition = WidgetStateDefinition
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val dates = listOf(LocalDate.now(), LocalDate.now().plusDays(1))
-        val combinedFlow = getWidgetCoursesByDatesAndWeekFlow(context, dates)
-
         provideContent {
+            // 从 DataStore 中直接获取当前快照
+            val snapshot = currentState<WidgetSnapshot>()
+
             GlanceTheme {
-                DoubleDaysLayout(coursesAndWeekFlow = combinedFlow)
+                DoubleDaysLayout(snapshot = snapshot)
             }
         }
     }

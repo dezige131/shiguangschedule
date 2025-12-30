@@ -1,4 +1,3 @@
-// ModerateScheduleWidget.kt
 package com.xingheyuzhuan.shiguangschedule.widget.moderate
 
 import android.content.Context
@@ -7,25 +6,25 @@ import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import com.xingheyuzhuan.shiguangschedule.widget.getWidgetCoursesByDatesAndWeekFlow
-import java.time.LocalDate
+import androidx.glance.currentState
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetSnapshot
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetStateDefinition
 
-/**
- * 这是4x2今日课程小组件的主要逻辑文件。
- * 它负责从 Room 数据库获取数据流，并将其传递给 UI 渲染组件。
- */
 class ModerateScheduleWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Exact
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val today = LocalDate.now()
-        val tomorrow = today.plusDays(1)
-        val combinedFlow = getWidgetCoursesByDatesAndWeekFlow(context, listOf(today, tomorrow))
+    // 1. 必须指定状态定义，否则 currentState<WidgetSnapshot>() 会返回空
+    override val stateDefinition = WidgetStateDefinition
 
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            // 2. 直接从快照状态中获取数据，不再使用数据库 Flow
+            val snapshot = currentState<WidgetSnapshot>()
+
             GlanceTheme {
-                ModerateLayout(multiDayCoursesAndWeekFlow = combinedFlow)
+                // 将整个快照传给 Layout
+                ModerateLayout(snapshot = snapshot)
             }
         }
     }

@@ -51,7 +51,8 @@ val Context.scheduleGridStyleDataStore: DataStore<ScheduleGridStyleProto> by dat
  * 样式设置的数据仓库，负责与 Proto DataStore 进行交互。
  */
 class StyleSettingsRepository(
-    private val dataStore: DataStore<ScheduleGridStyleProto>
+    private val dataStore: DataStore<ScheduleGridStyleProto>,
+    private val context: Context
 ) {
 
     /**
@@ -104,9 +105,12 @@ class StyleSettingsRepository(
     }
 
     /** 设置颜色列表映射 */
-    suspend fun setCourseColorMaps(maps: List<DualColor>) = updateStyle {
-        clearCourseColorMaps()
-        addAllCourseColorMaps(maps.map { it.toProto() })
+    suspend fun setCourseColorMaps(maps: List<DualColor>) {
+        updateStyle {
+            clearCourseColorMaps()
+            addAllCourseColorMaps(maps.map { it.toProto() })
+        }
+        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
     }
 
     /** 重置为默认样式 */
@@ -114,6 +118,7 @@ class StyleSettingsRepository(
         dataStore.updateData {
             ScheduleGridStyleProto.getDefaultInstance()
         }
+        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
     }
 
     /** * 设置是否隐藏左侧时间列的具体时间
@@ -188,5 +193,6 @@ class StyleSettingsRepository(
                 .setBackgroundImagePath(currentPath)
                 .build()
         }
+        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
     }
 }

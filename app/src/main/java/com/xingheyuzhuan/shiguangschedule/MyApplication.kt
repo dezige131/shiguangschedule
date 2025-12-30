@@ -32,7 +32,7 @@ class MyApplication : Application(), Configuration.Provider {
 
     // 样式设置仓库
     val styleSettingsRepository: StyleSettingsRepository by lazy {
-        StyleSettingsRepository(scheduleGridStyleDataStore)
+        StyleSettingsRepository(scheduleGridStyleDataStore, applicationContext)
     }
     // 主数据库仓库
     val appSettingsRepository: AppSettingsRepository by lazy {

@@ -6,25 +6,23 @@ import androidx.glance.GlanceTheme
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import com.xingheyuzhuan.shiguangschedule.widget.getWidgetCoursesByDatesAndWeekFlow
-import java.time.LocalDate // 引入 LocalDate
+import androidx.glance.currentState
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetSnapshot
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetStateDefinition
 
-/**
- * 这是2x2今日课程小组件的主要逻辑文件。
- * 它负责从 Room 数据库获取数据流，并将其传递给 UI 渲染组件。
- */
 class TodayScheduleWidget : GlanceAppWidget() {
 
+    // 关键：连接 DataStore 状态
+    override val stateDefinition = WidgetStateDefinition
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val today = LocalDate.now()
-        val tomorrow = today.plusDays(1)
-        val combinedFlow = getWidgetCoursesByDatesAndWeekFlow(context, listOf(today, tomorrow))
-
         provideContent {
+            // 直接读取当前小组件实例关联的快照数据
+            val snapshot = currentState<WidgetSnapshot>()
+
             GlanceTheme {
-                CompactLayout(multiDayCoursesAndWeekFlow = combinedFlow)
+                CompactLayout(snapshot = snapshot)
             }
         }
     }

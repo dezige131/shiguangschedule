@@ -88,5 +88,10 @@ fun BottomNavigationBar(
 @Preview(showBackground = true)
 @Composable
 fun BottomNavigationBarPreview() {
-    BottomNavigationBar(navController = rememberNavController(), currentRoute = Screen.Settings.route)
+    MaterialTheme {
+        BottomNavigationBar(
+            navController = rememberNavController(),
+            currentRoute = Screen.Settings.route
+        )
+    }
 }

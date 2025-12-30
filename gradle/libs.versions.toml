@@ -26,7 +26,7 @@ desugar-jdk-libs = "2.1.5"
 compose-animation = "1.10.0"
 coil = "2.7.0"
 protobuf = "4.33.2"
-protobufPlugin = "0.9.5"
+protobufPlugin = "0.9.6"
 javax-inject = "1"
 
 [libraries]
@@ -59,6 +59,8 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-glance = { group = "androidx.glance", name = "glance", version.ref = "glance" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
+androidx-glance-preview = { group = "androidx.glance", name = "glance-preview", version.ref = "glance" }
+androidx-glance-appwidget-preview = { group = "androidx.glance", name = "glance-appwidget-preview", version.ref = "glance" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }

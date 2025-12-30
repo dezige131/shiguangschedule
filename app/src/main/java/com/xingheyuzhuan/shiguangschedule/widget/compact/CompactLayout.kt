@@ -1,392 +1,214 @@
 package com.xingheyuzhuan.shiguangschedule.widget.compact
 
-import android.graphics.Paint
+import android.text.Layout
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.unit.dp
-import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
+import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
-import androidx.glance.LocalSize
-import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.appWidgetBackground
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.background
-import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
-import androidx.glance.layout.Column
-import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.fillMaxWidth
-import androidx.glance.layout.height
-import androidx.glance.layout.padding
-import androidx.glance.layout.width
-import androidx.glance.layout.wrapContentSize
-import com.xingheyuzhuan.shiguangschedule.MainActivity
+import androidx.glance.preview.ExperimentalGlancePreviewApi
+import androidx.glance.preview.Preview
 import com.xingheyuzhuan.shiguangschedule.R
-import com.xingheyuzhuan.shiguangschedule.data.db.widget.WidgetCourse
-import com.xingheyuzhuan.shiguangschedule.widget.EllipsizedBitmapText
+import com.xingheyuzhuan.shiguangschedule.widget.CourseIndicator
 import com.xingheyuzhuan.shiguangschedule.widget.WidgetColors
-import kotlinx.coroutines.flow.Flow
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetCourseProto
+import com.xingheyuzhuan.shiguangschedule.widget.WidgetSnapshot
+import com.xingheyuzhuan.shiguangschedule.widget.gcanvas.core.GCanvasViewport
+import com.xingheyuzhuan.shiguangschedule.widget.gcanvas.dsl.GCBox
+import com.xingheyuzhuan.shiguangschedule.widget.gcanvas.dsl.gcLine
+import com.xingheyuzhuan.shiguangschedule.widget.gcanvas.dsl.gcText
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.Locale
 import java.time.format.TextStyle as LocalDateTextStyle
 
-
-private const val BASE_WIDGET_WIDTH = 180f
-private const val BASE_WIDGET_HEIGHT = 180f
-private const val MAX_LAYOUT_SCALE = 4.0f
-
-
-/**
- * 紧凑课程小组件的布局。
- */
 @Composable
-fun CompactLayout(multiDayCoursesAndWeekFlow: Flow<Pair<List<List<WidgetCourse>>, Int?>>) {
+fun CompactLayout(snapshot: WidgetSnapshot) {
     val context = LocalContext.current
-    // 1. 计算缩放因子
-    val currentSize = LocalSize.current
-    val widthScale = currentSize.width.value / BASE_WIDGET_WIDTH
-    val heightScale = currentSize.height.value / BASE_WIDGET_HEIGHT
+    val allCourses = snapshot.coursesList
+    val currentWeek = if (snapshot.currentWeek == 0) null else snapshot.currentWeek
+    val styleProto = snapshot.style
 
-    val rawScale = minOf(widthScale, heightScale)
-    val finalScale = rawScale.coerceIn(1.0f, MAX_LAYOUT_SCALE)
-    val coursesAndWeekState = multiDayCoursesAndWeekFlow.collectAsState(initial = Pair(emptyList(), null))
-    val (allCoursesLists, currentWeek) = coursesAndWeekState.value
-
-    val todayCourses = allCoursesLists.firstOrNull() ?: emptyList()
-    val tomorrowCourses = allCoursesLists.getOrNull(1) ?: emptyList()
-
-    val isVacation = currentWeek == null
+    // 1. 数据逻辑
     val now = LocalTime.now()
-
-    // 今天剩余未上课程总数
-    val remainingTodayCoursesCount = todayCourses.count {
-        !it.isSkipped && LocalTime.parse(it.endTime) > now
+    val today = LocalDate.now()
+    val tomorrow = today.plusDays(1)
+    val todayRemaining = allCourses.filter {
+        (it.date == today.toString() || it.date.isBlank()) && !it.isSkipped && LocalTime.parse(it.endTime) > now
     }
+    val tomorrowCourses = allCourses.filter { it.date == tomorrow.toString() && !it.isSkipped }
+    val isVacation = currentWeek == null
+    val isShowingTomorrow = !isVacation && todayRemaining.isEmpty() && tomorrowCourses.isNotEmpty()
+    val displayCourses = if (isShowingTomorrow) tomorrowCourses.take(2) else todayRemaining.take(2)
+    val totalCount = if (isShowingTomorrow) tomorrowCourses.size else todayRemaining.size
+    val displayDate = if (isShowingTomorrow) tomorrow else today
 
-    val isTodayFinished = remainingTodayCoursesCount == 0
-    val hasTomorrowCourses = tomorrowCourses.isNotEmpty()
+    // 蒙版颜色定义
+    val maskPrimary = android.graphics.Color.BLACK  // 课程名：完全不透明
+    val maskSecondary = android.graphics.Color.argb(165, 0, 0, 0) // 详情：约 65% 透明度
+    val maskHint = android.graphics.Color.argb(140, 0, 0, 0) // 辅助：约 55% 透明度
+    val maskDivider = android.graphics.Color.argb(45, 0, 0, 0)  // 分割线：约 18% 透明度
 
-    val isShowingTomorrow = !isVacation && (todayCourses.isEmpty() || isTodayFinished) && hasTomorrowCourses
+    // --- 布局常量 ---
+    val listStartY = 60f
+    val itemHeight = 115f
+    val textStartX = 20f
+    val footerBottomOffset = 30f
 
-    val displayCourses = if (isShowingTomorrow) tomorrowCourses else todayCourses
-    val displayRemainingCount = if (isShowingTomorrow) tomorrowCourses.count { !it.isSkipped } else remainingTodayCoursesCount
-
-    val displayDate = if (isShowingTomorrow) LocalDate.now().plusDays(1) else LocalDate.now()
-
-    val topText = if (isShowingTomorrow) {
-        context.getString(R.string.widget_tomorrow_course_preview)
-    } else {
-        displayDate.dayOfWeek.getDisplayName(LocalDateTextStyle.SHORT, Locale.getDefault())
-    }
-    val subTopText = if (isShowingTomorrow) {
-        displayDate.dayOfWeek.getDisplayName(LocalDateTextStyle.SHORT, Locale.getDefault())
-    } else {
-        ""
-    }
-
-    // 获取接下来的 2 节课
-    val nextCourses = if (isShowingTomorrow) {
-        displayCourses.filter { !it.isSkipped }.take(2)
-    } else {
-        displayCourses.filter {
-            !it.isSkipped && LocalTime.parse(it.endTime) > now
-        }.take(2)
-    }
-
-    val shouldShowCenterStatusText = !isVacation && (
-            displayCourses.isEmpty()
-                    || (!isShowingTomorrow && nextCourses.isEmpty())
-            )
-
-
-    val systemCornerRadius = (21 * finalScale).dp
-
-    Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .background(WidgetColors.background)
-            .cornerRadius(systemCornerRadius)
-            .clickable(actionStartActivity<MainActivity>()),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = GlanceModifier.fillMaxSize()
-        ) {
-            // 顶部区域
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .padding(horizontal = (8 * finalScale).dp, vertical = (6 * finalScale).dp),
-                verticalAlignment = Alignment.CenterVertically
+    GCanvasViewport(
+        designWidth = 412f,
+        designHeight = 412f,
+        snapshot = snapshot,
+        cornerRadius = 55f,
+        safePadding = 42f,
+        backgroundColor = WidgetColors.background,
+        tintColor = WidgetColors.textPrimary,
+        content = { metrics ->
+            Box(
+                modifier = androidx.glance.GlanceModifier
+                    .fillMaxSize()
+                    .clickable(androidx.glance.action.actionStartActivity<com.xingheyuzhuan.shiguangschedule.MainActivity>())
             ) {
-                val safeMaxWidth = (100 * finalScale).dp
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    EllipsizedBitmapText(
-                        text = topText,
-                        fontSizeDp = (12f * finalScale).dp,
-                        color = WidgetColors.textHint,
-                        maxWidthDp = safeMaxWidth,
-                        modifier = GlanceModifier.wrapContentSize()
-                    )
-                    if (subTopText.isNotBlank()) {
-                        Spacer(modifier = GlanceModifier.width((4 * finalScale).dp))
-                        EllipsizedBitmapText(
-                            text = subTopText,
-                            fontSizeDp = (12f * finalScale).dp,
-                            color = WidgetColors.textHint,
-                            maxWidthDp = safeMaxWidth,
-                            modifier = GlanceModifier.wrapContentSize()
-                        )
+                if (!isVacation && displayCourses.isNotEmpty()) {
+                    displayCourses.forEachIndexed { index, _ ->
+                        val yItem = listStartY + (index * itemHeight)
+                        metrics.GCBox(x = 0f, y = yItem + 10f) {
+                            CourseIndicator(0f, 0f, 85f, displayCourses[index].colorInt, metrics, styleProto)
+                        }
                     }
                 }
-
-                Spacer(modifier = GlanceModifier.defaultWeight())
-
-                if (currentWeek != null) {
-                    EllipsizedBitmapText(
-                        text = context.getString(R.string.status_current_week_format, currentWeek),
-                        fontSizeDp = (12f * finalScale).dp,
-                        color = WidgetColors.textHint,
-                        maxWidthDp = safeMaxWidth,
-                        modifier = GlanceModifier.wrapContentSize()
-                    )
-                }
             }
+        },
+        onDraw = { canvas, _ ->
+            val contentWidth = 412f - 80f
+            val netHeight = 412f - 80f
 
-            if (isVacation) {
-                VacationLayout(scale = finalScale)
-            } else if (shouldShowCenterStatusText) {
-                val statusText = if (displayCourses.isEmpty()) {
-                    if (isShowingTomorrow) context.getString(R.string.widget_no_courses_tomorrow) else context.getString(R.string.text_no_courses_today)
-                } else {
-                    context.getString(R.string.widget_today_courses_finished)
-                }
-                NoCoursesLayout(scale = finalScale, statusText = statusText)
+            val headerTitle = if (isShowingTomorrow) {
+                context.getString(R.string.widget_tomorrow_course_preview)
             } else {
-                Column(
-                    modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                    horizontalAlignment = Alignment.Horizontal.Start,
-                    verticalAlignment = Alignment.Vertical.Top
-                ) {
-                    val slots = 2
-                    (0 until slots).forEach { slotIndex ->
-                        val course = nextCourses.getOrNull(slotIndex)
+                displayDate.dayOfWeek.getDisplayName(LocalDateTextStyle.SHORT, Locale.getDefault())
+            }
+            canvas.gcText(headerTitle, 0f, 0f, 28f, maskHint)
 
-                        Box(
-                            modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (course != null) {
-                                CourseItemCompact(course = course, index = slotIndex, scale = finalScale)
-                            }
-                        }
+            if (currentWeek != null) {
+                val weekStr = context.getString(R.string.status_current_week_format, currentWeek)
+                canvas.gcText(weekStr, 0f, 0f, 28f, maskHint, maxWidth = contentWidth, alignment = Layout.Alignment.ALIGN_OPPOSITE)
+            }
 
-                        if (slotIndex < slots - 1 && nextCourses.size > slotIndex + 1) {
-                            Spacer(modifier = GlanceModifier.height((3 * finalScale).dp))
-                            Row(
-                                modifier = GlanceModifier.fillMaxWidth()
-                                    .padding(horizontal = (8 * finalScale).dp)
-                            ) {
-                                Spacer(modifier = GlanceModifier.width((4 * finalScale).dp))
-                                Box(
-                                    modifier = GlanceModifier
-                                        .defaultWeight()
-                                        .height((1 * finalScale).dp)
-                                        .background(WidgetColors.divider)
-                                        .cornerRadius((0.5 * finalScale).dp),
-                                    content = {}
-                                )
-                            }
-                            Spacer(modifier = GlanceModifier.height((3 * finalScale).dp))
-                        }
-                    }
+            // 核心展示区域
+            when {
+                isVacation -> drawCenterStatus(
+                    canvas, contentWidth, netHeight,
+                    context.getString(R.string.title_vacation),
+                    context.getString(R.string.widget_vacation_expecting),
+                    maskPrimary, maskSecondary
+                )
+
+                displayCourses.isEmpty() -> {
+                    val statusText = if (isShowingTomorrow) context.getString(R.string.widget_no_courses_tomorrow)
+                    else context.getString(R.string.widget_today_courses_finished)
+                    drawCenterStatus(canvas, contentWidth, netHeight, statusText, "", maskPrimary, maskSecondary)
                 }
 
-                // 底部剩余课程数提示
-                if (displayRemainingCount > 0) {
-                    val formatResId = if (isShowingTomorrow) {
-                        R.string.widget_remaining_courses_format_tomorrow
-                    } else {
-                        R.string.widget_remaining_courses_format_today
-                    }
+                else -> {
+                    displayCourses.forEachIndexed { i, course ->
+                        val yItem = listStartY + (i * itemHeight)
 
-                    Row(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(horizontal = (8 * finalScale).dp)
-                            .padding(bottom = (6 * finalScale).dp),
-                        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-                    ) {
-                        EllipsizedBitmapText(
-                            text = context.getString(formatResId, displayRemainingCount),
-                            fontSizeDp = (10f * finalScale).dp,
-                            color = WidgetColors.textHint,
-                            maxWidthDp = (100 * finalScale).dp,
-                            modifier = GlanceModifier.wrapContentSize()
+                        drawCourseItemMask(
+                            canvas = canvas,
+                            x = textStartX,
+                            y = yItem,
+                            maxWidth = contentWidth - textStartX,
+                            course = course,
+                            primary = maskPrimary,
+                            secondary = maskSecondary
                         )
+
+                        if (i == 0 && displayCourses.size > 1) {
+                            canvas.gcLine(5f, yItem + 110f, contentWidth, yItem + 110f, 1f, maskDivider)
+                        }
                     }
-                } else {
-                    Spacer(modifier = GlanceModifier.height((6 * finalScale).dp))
+
+                    if (totalCount > 0) {
+                        val resId = if (isShowingTomorrow) R.string.widget_remaining_courses_format_tomorrow
+                        else R.string.widget_remaining_courses_format_today
+                        val footerText = context.getString(resId, totalCount)
+                        canvas.gcText(footerText, 0f, netHeight - footerBottomOffset, 24f, maskHint, maxWidth = contentWidth, alignment = Layout.Alignment.ALIGN_CENTER)
+                    }
                 }
             }
         }
+    )
+}
+
+/**
+ * 绘制课程项：使用形状蒙版逻辑
+ */
+private fun drawCourseItemMask(
+    canvas: android.graphics.Canvas,
+    x: Float,
+    y: Float,
+    maxWidth: Float,
+    course: WidgetCourseProto,
+    primary: Int,
+    secondary: Int
+) {
+    // 1. 标题行 (加粗蒙版)
+    canvas.gcText(course.name, x, y - 6f, 36f, primary, isBold = true, maxWidth = maxWidth, maxLines = 1)
+
+    // 2. 详情行
+    val subY = y + 42f
+    val timeStr = "${course.startTime.take(5)}-${course.endTime.take(5)}"
+
+    if (course.position.isNotBlank()) {
+        canvas.gcText(course.position, x, subY, 28f, secondary, maxWidth = maxWidth - 120f, maxLines = 1)
+    }
+    canvas.gcText(timeStr, x - 5f, subY, 28f, secondary, maxWidth = maxWidth, alignment = Layout.Alignment.ALIGN_OPPOSITE)
+
+    // 3. 教师行
+    if (course.teacher.isNotBlank()) {
+        canvas.gcText(course.teacher, x, subY + 34f, 28f, secondary, maxWidth = maxWidth, maxLines = 1)
     }
 }
 
 /**
- * 无课程布局
+ * 绘制居中状态文字 (假期或空课)
  */
+private fun drawCenterStatus(
+    canvas: android.graphics.Canvas,
+    width: Float,
+    height: Float,
+    title: String,
+    subTitle: String,
+    primary: Int,
+    secondary: Int
+) {
+    val centerY = height / 2f
+    canvas.gcText(title, 0f, centerY - 35f, 38f, primary, isBold = true, maxWidth = width, alignment = Layout.Alignment.ALIGN_CENTER)
+    if (subTitle.isNotBlank()) {
+        canvas.gcText(subTitle, 0f, centerY + 20f, 28f, secondary, maxWidth = width, alignment = Layout.Alignment.ALIGN_CENTER)
+    }
+}
+
+@OptIn(ExperimentalGlancePreviewApi::class)
+@Preview(widthDp = 412, heightDp = 412)
 @Composable
-fun NoCoursesLayout(scale: Float, statusText: String) {
-    Column(
-        modifier = GlanceModifier.fillMaxSize(),
-        verticalAlignment = Alignment.Vertical.CenterVertically,
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-    ) {
-        EllipsizedBitmapText(
-            text = statusText,
-            fontSizeDp = (12f * scale).dp,
-            color = WidgetColors.textPrimary,
-            maxWidthDp = (150 * scale).dp,
-            modifier = GlanceModifier.wrapContentSize()
-        )
-    }
-}
+fun CompactLayoutPreview() {
+    val today = LocalDate.now().toString()
+    val mockSnapshot = WidgetSnapshot.newBuilder().apply {
+        currentWeek = 18
+        style = com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.ScheduleGridStyleProto.newBuilder().apply {
+            addCourseColorMaps(com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.DualColorProto.newBuilder()
+                .setLightColor(0xFF007AFF.toLong()).build())
+            addCourseColorMaps(com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.DualColorProto.newBuilder()
+                .setLightColor(0xFFFF9500.toLong()).build())
+        }.build()
+        addCourses(WidgetCourseProto.newBuilder().setName("高等数学").setTeacher("李老师").setStartTime("08:30:00").setEndTime("20:05:00").setPosition("教3-101").setColorInt(0).setDate(today).build())
+        addCourses(WidgetCourseProto.newBuilder().setName("大学物理实验").setTeacher("王教授").setStartTime("10:20:00").setEndTime("21:55:00").setPosition("物理实验室").setColorInt(1).setDate(today).build())
+    }.build()
 
-/**
- * 假期布局
- */
-@Composable
-fun VacationLayout(scale: Float) {
-    val context = LocalContext.current
-    Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .padding((20 * scale).dp),
-        horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-        verticalAlignment = Alignment.Vertical.CenterVertically
-    ) {
-        val safeMaxWidth = (150 * scale).dp
-        EllipsizedBitmapText(
-            text = context.getString(R.string.title_vacation),
-            fontSizeDp = (12f * scale).dp,
-            color = WidgetColors.textPrimary,
-            maxWidthDp = safeMaxWidth,
-            modifier = GlanceModifier.wrapContentSize()
-        )
-        EllipsizedBitmapText(
-            text = context.getString(R.string.widget_vacation_expecting),
-            fontSizeDp = (10f * scale).dp,
-            color = WidgetColors.textSecondary,
-            maxWidthDp = safeMaxWidth,
-            modifier = GlanceModifier.wrapContentSize()
-        )
-    }
-}
-
-/**
- * 获取课程指示器 Drawable 资源
- */
-fun getCourseIndicatorDrawable(index: Int): Int {
-    return when (index % 5) {
-        0 -> R.drawable.course_indicator_blue
-        1 -> R.drawable.course_indicator_red
-        2 -> R.drawable.course_indicator_purple
-        3 -> R.drawable.course_indicator_green
-        else -> R.drawable.course_indicator_orange
-    }
-}
-
-/**
- * 单个课程项内容
- */
-@Composable
-fun CourseItemCompact(course: WidgetCourse, index: Int, scale: Float) {
-    val totalWidgetWidthValue = LocalSize.current.width.value
-    val indicatorWidthValue = 4f * scale
-    val spacerWidthValue = 8f * scale
-    val rowPaddingValue = 8f * scale * 2
-
-    val calculatedWidthValue = totalWidgetWidthValue - indicatorWidthValue - spacerWidthValue - rowPaddingValue
-    val calculatedMaxWidth = if (calculatedWidthValue > 1f) calculatedWidthValue.dp else 1.dp
-
-
-    Row(
-        modifier = GlanceModifier
-            .fillMaxWidth()
-            .padding(horizontal = (8 * scale).dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            provider = ImageProvider(getCourseIndicatorDrawable(index)),
-            contentDescription = null,
-            modifier = GlanceModifier
-                .width((4 * scale).dp)
-                .height((52 * scale).dp)
-        )
-
-        Spacer(modifier = GlanceModifier.width((8 * scale).dp))
-
-        Column(
-            modifier = GlanceModifier.defaultWeight(),
-            horizontalAlignment = Alignment.Horizontal.Start
-        ) {
-            EllipsizedBitmapText(
-                text = course.name,
-                fontSizeDp = (13f * scale).dp,
-                color = WidgetColors.textPrimary,
-                maxWidthDp = calculatedMaxWidth,
-                modifier = GlanceModifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = GlanceModifier.height((2 * scale).dp))
-
-            if (course.teacher.isNotBlank()) {
-                EllipsizedBitmapText(
-                    text = course.teacher,
-                    fontSizeDp = (11f * scale).dp,
-                    color = WidgetColors.textSecondary,
-                    maxWidthDp = calculatedMaxWidth,
-                    modifier = GlanceModifier.fillMaxWidth()
-                )
-                Spacer(modifier = GlanceModifier.height((2 * scale).dp))
-            }
-
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val safeTimeMaxWidth = (100 * scale).dp
-
-                EllipsizedBitmapText(
-                    text = "${course.startTime.take(5)}-${course.endTime.take(5)}",
-                    fontSizeDp = (10f * scale).dp,
-                    color = WidgetColors.textTertiary,
-                    maxWidthDp = safeTimeMaxWidth,
-                    modifier = GlanceModifier.wrapContentSize()
-                )
-
-                if (course.position.isNotBlank()) {
-                    Spacer(modifier = GlanceModifier.width((4 * scale).dp))
-
-                    EllipsizedBitmapText(
-                        text = course.position,
-                        fontSizeDp = (10f * scale).dp,
-                        color = WidgetColors.textTertiary,
-                        maxWidthDp = calculatedMaxWidth,
-                        textAlign = Paint.Align.RIGHT,
-                        modifier = GlanceModifier.defaultWeight()
-                    )
-                }
-            }
-        }
+    GlanceTheme {
+        CompactLayout(snapshot = mockSnapshot)
     }
 }

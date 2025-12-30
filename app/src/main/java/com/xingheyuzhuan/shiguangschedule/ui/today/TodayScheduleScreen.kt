@@ -1,6 +1,7 @@
 package com.xingheyuzhuan.shiguangschedule.ui.today
 
 import android.app.Application
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -27,6 +29,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
 import com.xingheyuzhuan.shiguangschedule.R
+import com.xingheyuzhuan.shiguangschedule.data.model.ScheduleGridStyle
 import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +47,10 @@ fun TodayScheduleScreen(
 
     val semesterStatus by viewModel.semesterStatus.collectAsState()
     val todayCourses by viewModel.todayCourses.collectAsState()
+    // 1. 获取全局样式配置
+    val gridStyle by viewModel.gridStyle.collectAsState()
+    // 2. 监测系统深色模式状态
+    val isDark = isSystemInDarkTheme()
 
     Scaffold(
         topBar = {
@@ -118,22 +125,33 @@ fun TodayScheduleScreen(
                             }
                         }
 
-                        val cardColor = if (isCourseFinished) {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                        } else {
-                            MaterialTheme.colorScheme.tertiaryContainer
+                        // 3. 根据课程的 colorInt 获取对应的配色对
+                        val colorPair = gridStyle.courseColorMaps.getOrElse(course.colorInt) {
+                            ScheduleGridStyle.DEFAULT_COLOR_MAPS[0]
                         }
 
-                        val contentColor = if (isCourseFinished) {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        // 4. 根据当前深色/浅色模式选择颜色
+                        val baseColor = if (isDark) colorPair.dark else colorPair.light
+
+                        // 5. 计算卡片容器颜色（如果已结束，降低透明度）
+                        val cardColor = if (isCourseFinished) {
+                            baseColor.copy(alpha = 0.4f)
                         } else {
-                            MaterialTheme.colorScheme.onTertiaryContainer
+                            baseColor
                         }
+
+                        // 计算文字颜色（深色模式下用白色，浅色通常用黑色或深色，取决于背景）
+                        val contentColor = if (isDark) Color.White else Color.Black
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = cardColor),
-                            elevation = CardDefaults.cardElevation(defaultElevation = if (isCourseFinished) 1.dp else 2.dp)
+                            colors = CardDefaults.cardColors(
+                                containerColor = cardColor,
+                                contentColor = contentColor // 自动应用到卡片内的文字
+                            ),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = if (isCourseFinished) 0.dp else 2.dp
+                            )
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp)

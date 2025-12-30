@@ -95,6 +95,8 @@ fun ContributionScreen(
 }
 
 // 选项卡 Composable
+// PrimaryTabRow 目前在 Material 3 中仍标记为实验性 API
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContributionTabs(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
     val tabs = listOf(
@@ -102,12 +104,22 @@ fun ContributionTabs(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
         stringResource(R.string.tab_app_development)
     )
 
-    TabRow(selectedTabIndex = selectedTabIndex) {
+    PrimaryTabRow(
+        selectedTabIndex = selectedTabIndex,
+    ) {
         tabs.forEachIndexed { index, title ->
             Tab(
                 selected = selectedTabIndex == index,
                 onClick = { onTabSelected(index) },
-                text = { Text(title) }
+                text = {
+                    Text(
+                        text = title,
+                        style = if (selectedTabIndex == index)
+                            MaterialTheme.typography.titleSmall
+                        else
+                            MaterialTheme.typography.bodyMedium
+                    )
+                }
             )
         }
     }

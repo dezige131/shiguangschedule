@@ -212,15 +212,15 @@ private fun SchoolContent(
 }
 
 /**
- * 类别选择器，现在使用 Protobuf 的 AdapterCategory。
+ * 类别选择器，使用最新的 PrimaryTabRow。
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryTabs(
     selectedCategory: AdapterCategory,
     onCategorySelected: (AdapterCategory) -> Unit,
     displayCategories: List<AdapterCategory>
 ) {
-    // 类别到中文名称的映射，替换为使用 stringResource
     @Composable
     fun getDisplayName(category: AdapterCategory): String {
         return when (category) {
@@ -231,17 +231,28 @@ fun CategoryTabs(
         }
     }
 
-    val selectedIndex = displayCategories.indexOf(selectedCategory)
+    val selectedIndex = displayCategories.indexOf(selectedCategory).coerceAtLeast(0)
 
-    TabRow(
-        selectedTabIndex = if (selectedIndex < 0) 0 else selectedIndex,
-        modifier = Modifier.fillMaxWidth()
+    PrimaryTabRow(
+        selectedTabIndex = selectedIndex,
+        modifier = Modifier.fillMaxWidth(),
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedIndex),
+                width = 24.dp,
+            )
+        }
     ) {
         displayCategories.forEachIndexed { index, category ->
             Tab(
                 selected = index == selectedIndex,
                 onClick = { onCategorySelected(category) },
-                text = { Text(text = getDisplayName(category)) }
+                text = {
+                    Text(
+                        text = getDisplayName(category),
+                        fontWeight = if (index == selectedIndex) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             )
         }
     }
