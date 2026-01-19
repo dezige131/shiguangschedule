@@ -135,6 +135,14 @@ class StyleSettingsRepository(
         hideDateUnderDay = hide
     }
 
+    /**
+     * 设置是否隐藏网格线
+     * @param hide true 表示隐藏，false 表示显示 (默认)
+     */
+    suspend fun setHideGridLines(hide: Boolean) = updateStyle {
+        hideGridLines = hide
+    }
+
     /** * 设置是否在课程格内显示开始时间
      * @param show true 表示显示，false 表示不显示 (默认)
      */

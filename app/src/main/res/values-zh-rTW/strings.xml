@@ -432,6 +432,7 @@
     <string name="desc_wallpaper_unset">未設置 (點擊選擇圖片)</string>
     <string name="label_hide_section_time">隱藏節次具體時間</string>
     <string name="label_hide_date_under_day">隱藏日期 (週幾下方)</string>
+    <string name="label_hide_grid_lines">隱藏網格線</string>
     <string name="label_show_start_time">顯示課程格開始時間</string>
     <string name="label_section_height">格子高度</string>
     <string name="label_time_column_width">側邊欄寬度</string>

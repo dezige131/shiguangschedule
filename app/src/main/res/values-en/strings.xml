@@ -432,6 +432,7 @@
     <string name="desc_wallpaper_unset">Not set (Tap to select image)</string>
     <string name="label_hide_section_time">Hide specific section times</string>
     <string name="label_hide_date_under_day">Hide date (below day of week)</string>
+    <string name="label_hide_grid_lines">Hide Grid Lines</string>
     <string name="label_show_start_time">Show start time on course cells</string>
     <string name="label_section_height">Grid Height</string>
     <string name="label_time_column_width">Sidebar Width</string>

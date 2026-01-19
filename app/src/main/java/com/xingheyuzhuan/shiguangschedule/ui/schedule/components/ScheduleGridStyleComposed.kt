@@ -35,6 +35,7 @@ data class ScheduleGridStyleComposed(
     val courseColorMaps: List<DualColor>,
 
     // UI 渲染开关
+    val hideGridLines: Boolean,      // 是否隐藏网格线
     val hideSectionTime: Boolean,
     val hideDateUnderDay: Boolean,
     val showStartTime: Boolean,
@@ -65,7 +66,7 @@ data class ScheduleGridStyleComposed(
                         dark = Color(dual.dark.toArgb())
                     )
                 },
-
+                hideGridLines = this.hideGridLines,
                 hideSectionTime = this.hideSectionTime,
                 hideDateUnderDay = this.hideDateUnderDay,
                 showStartTime = this.showStartTime,

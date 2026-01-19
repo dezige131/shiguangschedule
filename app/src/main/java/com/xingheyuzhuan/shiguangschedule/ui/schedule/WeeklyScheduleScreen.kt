@@ -39,13 +39,12 @@ import java.time.temporal.TemporalAdjusters
 
 /**
  * 无限时间轴的中值锚点。
- * 使用 Int.MAX_VALUE / 2 允许用户向过去或未来进行几乎无限次数的滑动。
  */
 private const val INFINITE_PAGER_CENTER = Int.MAX_VALUE / 2
 
 /**
  * 周课表主屏幕组件。
- * 采用 HorizontalPager 实现无限滚动的周次切换，并与 ViewModel 的数据流深度绑定。
+ * 持三周滑动窗口预加载，消除滑动残留与加载闪烁。
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -53,84 +52,53 @@ fun WeeklyScheduleScreen(
     navController: NavHostController,
     viewModel: WeeklyScheduleViewModel = viewModel(factory = WeeklyScheduleViewModelFactory)
 ) {
-    // 订阅 ViewModel 状态，并感知生命周期（当 UI 不可见时停止收集）
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val today = LocalDate.now()
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope() // 用于处理 UI 层级的协程（如 Pager 滚动、Snackbar）
+    val coroutineScope = rememberCoroutineScope()
 
-    // 预读取字符串资源，避免在回调协程中直接查询 Context 导致警告
     val snackbarMsg = stringResource(id = R.string.snackbar_add_course_after_start)
-
-    // 性能优化：记住 ApplicationContext，确保 ViewModel 中的资源查询在配置更改时稳定
     val appContext = remember { context.applicationContext }
 
-    // 初始化注入：将资源提供逻辑注入 ViewModel，实现逻辑层与 UI 资源的解耦
     LaunchedEffect(Unit) {
         viewModel.setStringProvider { id, args ->
             appContext.resources.getString(id, *args)
         }
     }
 
-    // Pager 状态：设置为中心位置实现左右滑动
     val pagerState = rememberPagerState(
         initialPage = INFINITE_PAGER_CENTER,
         pageCount = { Int.MAX_VALUE }
     )
 
-    /**
-     * 核心同步逻辑：
-     * 1. 监听 Pager 的当前页码变化。
-     * 2. 根据页码与中心点的差值计算对应的物理周次。
-     * 3. 更新 ViewModel 中的基准日期，从而触发数据库拉取该周课程。
-     */
+    // 同步 Pager 状态到 ViewModel (用于标题和当前周逻辑更新)
     LaunchedEffect(pagerState.currentPage, uiState.firstDayOfWeek) {
         snapshotFlow { pagerState.currentPage }
             .distinctUntilChanged()
             .collect { pageIndex ->
                 val offsetWeeks = (pageIndex - INFINITE_PAGER_CENTER).toLong()
                 val firstDay = DayOfWeek.of(uiState.firstDayOfWeek)
-                // 计算当前周的起始日（周一或周日）
                 val thisMonday = today.with(TemporalAdjusters.previousOrSame(firstDay))
-                // 计算 Pager 目标页面对应的日期
                 val targetMonday = thisMonday.plusWeeks(offsetWeeks)
                 viewModel.updatePagerDate(targetMonday)
             }
     }
 
-    // 衍生状态：计算当前页面显示的 MM-dd 格式日期列表（如 09-01, 09-02...）
-    val dateStrings by remember(uiState.pagerMondayDate) {
-        derivedStateOf {
-            val formatter = DateTimeFormatter.ofPattern("MM-dd")
-            (0..6).map { uiState.pagerMondayDate.plusDays(it.toLong()).format(formatter) }
-        }
-    }
-
-    // 衍生状态：计算“今天”在 0-6 索引中的位置，用于高亮显示当前列
-    val todayIndex by remember(uiState.pagerMondayDate) {
-        derivedStateOf {
-            val weekDates = (0..6).map { uiState.pagerMondayDate.plusDays(it.toLong()) }
-            weekDates.indexOf(today)
-        }
-    }
-
-    // UI 交互控制变量
-    var showWeekSelector by remember { mutableStateOf(false) } // 周次选择器弹窗
-    var showConflictBottomSheet by remember { mutableStateOf(false) } // 课程冲突列表弹窗
-    var conflictCoursesToShow by remember { mutableStateOf(emptyList<CourseWithWeeks>()) } // 冲突详情数据源
+    // UI 交互控制
+    var showWeekSelector by remember { mutableStateOf(false) }
+    var showConflictBottomSheet by remember { mutableStateOf(false) }
+    var conflictCoursesToShow by remember { mutableStateOf(emptyList<CourseWithWeeks>()) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior() // 顶部栏折叠行为
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // 将数据库的样式模型转换为 Compose 渲染所需的可组合样式
     val composedStyle by remember(uiState.style) {
         derivedStateOf { with(ScheduleGridStyleComposed) { uiState.style.toComposedStyle() } }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 背景层：如果有自定义背景图，通过 AsyncImage 异步加载并填充全屏
         if (composedStyle.backgroundImagePath.isNotEmpty()) {
             AsyncImage(
                 model = composedStyle.backgroundImagePath,
@@ -142,7 +110,7 @@ fun WeeklyScheduleScreen(
 
         Scaffold(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-            containerColor = Color.Transparent, // 允许底层背景透出
+            containerColor = Color.Transparent,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
@@ -150,10 +118,8 @@ fun WeeklyScheduleScreen(
                             text = uiState.weekTitle,
                             modifier = Modifier.clickable {
                                 if (!uiState.isSemesterSet || uiState.semesterStartDate == null) {
-                                    // 没设置学期，引导去设置
                                     navController.navigate(Screen.Settings.route)
                                 } else {
-                                    // 只要设置了，点击就弹周次选择器（无论是在开学前、学期中还是学期后）
                                     showWeekSelector = true
                                 }
                             }
@@ -175,58 +141,74 @@ fun WeeklyScheduleScreen(
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
         ) { innerPadding ->
-            // 无限循环周课表 Pager
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.padding(innerPadding).fillMaxSize()
+                modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                // [预加载] 强制渲染相邻页面，确保滑动时目标页已就绪
+                beyondViewportPageCount = 1
             ) { pageIndex ->
-                // 性能优化：仅渲染当前可见及左右相邻的一个页面（预加载）
-                if (kotlin.math.abs(pageIndex - pagerState.currentPage) <= 1) {
-                    ScheduleGrid(
-                        style = composedStyle,
-                        dates = dateStrings,
-                        timeSlots = uiState.timeSlots,
-                        mergedCourses = uiState.currentMergedCourses,
-                        showWeekends = uiState.showWeekends,
-                        todayIndex = todayIndex,
-                        firstDayOfWeek = uiState.firstDayOfWeek,
-                        onCourseBlockClicked = { mergedBlock ->
-                            if (mergedBlock.isConflict) {
-                                // 处理冲突：显示底层弹窗供用户选择具体哪一门课程
-                                conflictCoursesToShow = mergedBlock.courses
-                                showConflictBottomSheet = true
-                            } else {
-                                // 无冲突：直接跳转详情编辑页
-                                mergedBlock.courses.firstOrNull()?.course?.id?.let {
-                                    navController.navigate(Screen.AddEditCourse.createRouteWithCourseId(it))
-                                }
-                            }
-                        },
-                        onGridCellClicked = { day, section ->
-                            // 空白格子点击：如果在学期范围内，预设时间并跳转“添加课程”
-                            if (uiState.semesterStartDate != null && !today.isBefore(uiState.semesterStartDate)) {
-                                coroutineScope.launch {
-                                    AddEditCourseChannel.sendEvent(PresetCourseData(day, section, section))
-                                    navController.navigate(Screen.AddEditCourse.createRouteForNewCourse())
-                                }
-                            } else {
-                                // 非学期内弹出提示
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(snackbarMsg)
-                                }
-                            }
-                        },
-                        onTimeSlotClicked = {
-                            // 点击左侧侧边栏时间轴，进入时间表设置
-                            navController.navigate(Screen.TimeSlotSettings.route)
-                        }
-                    )
+
+                // 去中心化：每一页根据索引独立计算自己的周一日期
+                val pageMondayDate = remember(pageIndex, uiState.firstDayOfWeek) {
+                    val offsetWeeks = (pageIndex - INFINITE_PAGER_CENTER).toLong()
+                    val firstDay = DayOfWeek.of(uiState.firstDayOfWeek)
+                    today.with(TemporalAdjusters.previousOrSame(firstDay)).plusWeeks(offsetWeeks)
                 }
+
+                // 独立日期列表：计算该页显示的日期文本
+                val pageDateStrings = remember(pageMondayDate) {
+                    val formatter = DateTimeFormatter.ofPattern("MM-dd")
+                    (0..6).map { pageMondayDate.plusDays(it.toLong()).format(formatter) }
+                }
+
+                // 独立高亮：计算“今天”在该页的位置
+                val pageTodayIndex = remember(pageMondayDate) {
+                    val weekDates = (0..6).map { pageMondayDate.plusDays(it.toLong()) }
+                    weekDates.indexOf(today)
+                }
+
+                // 从三周缓存 Map 中获取该页日期对应的数据
+                val pageCourses = uiState.courseCache[pageMondayDate.toString()] ?: emptyList()
+
+                ScheduleGrid(
+                    style = composedStyle,
+                    dates = pageDateStrings,
+                    timeSlots = uiState.timeSlots,
+                    mergedCourses = pageCourses, // 绑定本页专属数据
+                    showWeekends = uiState.showWeekends,
+                    todayIndex = pageTodayIndex,
+                    firstDayOfWeek = uiState.firstDayOfWeek,
+                    onCourseBlockClicked = { mergedBlock ->
+                        if (mergedBlock.isConflict) {
+                            conflictCoursesToShow = mergedBlock.courses
+                            showConflictBottomSheet = true
+                        } else {
+                            mergedBlock.courses.firstOrNull()?.course?.id?.let {
+                                navController.navigate(Screen.AddEditCourse.createRouteWithCourseId(it))
+                            }
+                        }
+                    },
+                    onGridCellClicked = { day, section ->
+                        if (uiState.semesterStartDate != null && !today.isBefore(uiState.semesterStartDate)) {
+                            coroutineScope.launch {
+                                AddEditCourseChannel.sendEvent(PresetCourseData(day, section, section))
+                                navController.navigate(Screen.AddEditCourse.createRouteForNewCourse())
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(snackbarMsg)
+                            }
+                        }
+                    },
+                    onTimeSlotClicked = {
+                        navController.navigate(Screen.TimeSlotSettings.route)
+                    }
+                )
             }
         }
     }
 
-    // 周次快速切换弹窗
+    // 周次选择弹窗
     if (showWeekSelector) {
         WeekSelectorBottomSheet(
             totalWeeks = uiState.totalWeeks,
@@ -236,7 +218,6 @@ fun WeeklyScheduleScreen(
                 val currentWeekAtPage = uiState.weekIndexInPager ?: 1
                 val offset = week - currentWeekAtPage
                 coroutineScope.launch {
-                    // 执行平滑滚动到指定周次对应的页码
                     pagerState.animateScrollToPage(pagerState.currentPage + offset)
                 }
                 showWeekSelector = false
@@ -245,7 +226,7 @@ fun WeeklyScheduleScreen(
         )
     }
 
-    // 课程冲突处理弹窗
+    // 冲突处理弹窗
     if (showConflictBottomSheet) {
         ConflictCourseBottomSheet(
             style = composedStyle,

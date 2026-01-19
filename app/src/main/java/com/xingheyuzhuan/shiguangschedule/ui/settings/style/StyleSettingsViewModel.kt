@@ -167,6 +167,11 @@ class StyleSettingsViewModel(
 
     // --- UI 渲染开关 API ---
 
+    /** 更新是否隐藏网格线 */
+    fun updateHideGridLines(hide: Boolean) = viewModelScope.launch {
+        styleRepository.setHideGridLines(hide)
+    }
+
     /** 更新是否隐藏左侧时间列的具体时间 */
     fun updateHideSectionTime(hide: Boolean) = viewModelScope.launch {
         styleRepository.setHideSectionTime(hide)
@@ -239,18 +244,79 @@ class StyleSettingsViewModel(
         styleRepository.setCourseColorMaps(updatedMaps)
     }
 
-    // --- 演示数据构造 (保持不变) ---
+    //  演示数据构造
+    //  演示数据构造
     private fun createDemoCourses(): List<MergedCourseBlock> {
         val dummyTableId = UUID.randomUUID().toString()
+        val slots = createDemoTimeSlots()
+
+        /**
+         * 修正后的逻辑位置计算：
+         * 为了让预览界面和实际课表对齐，这里必须模拟 [timeToLogicalScale] 的计算结果。
+         * startSection = (逻辑节次 - 1)
+         */
+        fun getLogicalPosition(timeStr: String): Float {
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            val time = java.time.LocalTime.parse(timeStr, formatter)
+
+            // 模拟 ViewModel 的逻辑：找到所属节次
+            val slot = slots.find {
+                val s = java.time.LocalTime.parse(it.startTime, formatter)
+                val e = java.time.LocalTime.parse(it.endTime, formatter)
+                !time.isBefore(s) && !time.isAfter(e)
+            }
+
+            return if (slot != null) {
+                val sTime = java.time.LocalTime.parse(slot.startTime, formatter)
+                val eTime = java.time.LocalTime.parse(slot.endTime, formatter)
+                val duration = java.time.temporal.ChronoUnit.MINUTES.between(sTime, eTime).coerceAtLeast(1)
+                val elapsed = java.time.temporal.ChronoUnit.MINUTES.between(sTime, time)
+                // 结果：(节次序号 + 进度) - 1.0 (因为 UI 坐标从 0 开始)
+                (slot.number.toFloat() + (elapsed.toFloat() / duration.toFloat())) - 1f
+            } else {
+                // 如果在课间，简单返回最近的节次起止点（预览数据简化处理）
+                val nextSlot = slots.find { java.time.LocalTime.parse(it.startTime, formatter).isAfter(time) }
+                (nextSlot?.number?.minus(1)?.toFloat() ?: 0f)
+            }
+        }
+
+        // 1. 普通课程展示 (周一 1-2节)
+        // 占满第 1 节和第 2 节，逻辑坐标应该是从 0.0 到 2.0
         val courseA = Course(UUID.randomUUID().toString(), dummyTableId, "普通课程展示", "张老师", "教A-101", 1, 1, 2, false, null, null, 0)
-        val courseB = Course(UUID.randomUUID().toString(), dummyTableId, "比例布局演示", "系统", "精准渲染", 2, null, null, true, "09:50", "11:30", 1)
+
+        // 2. 自定义时间演示 (周二 09:50 - 11:30)
+        // 假设第 3 节是 10:20 开始，那么 09:50 会被计算在第 2 节和第 3 节之间
+        val courseB = Course(UUID.randomUUID().toString(), dummyTableId, "精准渲染演示", "系统", "1:1还原", 2, null, null, true, "09:50", "11:30", 1)
+
+        // 3. 冲突课程 (周三 1-2节)
         val courseC1 = Course(UUID.randomUUID().toString(), dummyTableId, "冲突课程 A", "王老师", "302", 3, 1, 2, false, null, null, 2)
         val courseC2 = Course(UUID.randomUUID().toString(), dummyTableId, "冲突课程 B", "赵老师", "405", 3, 1, 2, false, null, null, 3)
 
         return listOf(
-            MergedCourseBlock(day = 1, startSection = 1, endSection = 2, courses = listOf(CourseWithWeeks(courseA, emptyList()))),
-            MergedCourseBlock(day = 2, startSection = 2, endSection = 3, courses = listOf(CourseWithWeeks(courseB, emptyList())), needsProportionalRendering = true),
-            MergedCourseBlock(day = 3, startSection = 1, endSection = 2, courses = listOf(CourseWithWeeks(courseC1, emptyList()), CourseWithWeeks(courseC2, emptyList())), isConflict = true)
+            // 普通课程：第 1 节起(0.0)，第 2 节止(2.0)
+            MergedCourseBlock(
+                day = 1,
+                startSection = 0f,
+                endSection = 2f,
+                courses = listOf(CourseWithWeeks(courseA, emptyList()))
+            ),
+
+            // 自定义时间：动态计算逻辑位置
+            MergedCourseBlock(
+                day = 2,
+                startSection = getLogicalPosition("09:50"),
+                endSection = getLogicalPosition("11:30"),
+                courses = listOf(CourseWithWeeks(courseB, emptyList()))
+            ),
+
+            // 冲突课程：第 1 节起(0.0)，第 2 节止(2.0)
+            MergedCourseBlock(
+                day = 3,
+                startSection = 0f,
+                endSection = 2f,
+                courses = listOf(CourseWithWeeks(courseC1, emptyList()), CourseWithWeeks(courseC2, emptyList())),
+                isConflict = true
+            )
         )
     }
 

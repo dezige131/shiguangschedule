@@ -39,6 +39,7 @@ message ScheduleGridStyleProto {
   bool hide_section_time = 12;   // 隐藏具体时间段 (如 08:00-08:45)
   bool hide_date_under_day = 13; // 隐藏日期 (如 06-23)
   bool show_start_time = 14;     // 课程格内是否显示开始时间
+  bool hide_grid_lines = 20;     // 是否隐藏网格线
 
   // 字体配置
   optional float course_block_font_scale = 15; // 文字缩放比例 (默认 1.0)

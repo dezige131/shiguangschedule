@@ -37,6 +37,7 @@ data class ScheduleGridStyle(
 
     val courseBlockFontScale: Float = DEFAULT_FONT_SCALE,
 
+    val hideGridLines: Boolean = false,
     val hideSectionTime: Boolean = false,
     val hideDateUnderDay: Boolean = false,
     val showStartTime: Boolean = false,
@@ -97,6 +98,7 @@ data class ScheduleGridStyle(
             conflictCourseColorDarkLong = DEFAULT_CONFLICT_COLOR_DARK,
             courseColorMaps = DEFAULT_COLOR_MAPS,
             courseBlockFontScale = DEFAULT_FONT_SCALE,
+            hideGridLines = false,
             hideSectionTime = false,
             hideDateUnderDay = false,
             showStartTime = false,
@@ -152,6 +154,7 @@ fun ScheduleGridStyleProto.toCompose(): ScheduleGridStyle {
 
         // 5. 其他列表和布尔值
         courseColorMaps = if (this.courseColorMapsList.isEmpty()) d.courseColorMaps else this.courseColorMapsList.map { it.toCompose() },
+        hideGridLines = this.hideGridLines,
         hideSectionTime = this.hideSectionTime,
         hideDateUnderDay = this.hideDateUnderDay,
         showStartTime = this.showStartTime,
@@ -182,6 +185,7 @@ fun ScheduleGridStyle.toProto(): ScheduleGridStyleProto {
 
         addAllCourseColorMaps(this@toProto.courseColorMaps.map { it.toProto() })
 
+        hideGridLines = this@toProto.hideGridLines
         hideSectionTime = this@toProto.hideSectionTime
         hideDateUnderDay = this@toProto.hideDateUnderDay
         showStartTime = this@toProto.showStartTime
