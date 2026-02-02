@@ -337,6 +337,9 @@
     <string name="error_tweak_failed">調課失敗：%1$s</string>
     <string name="course_time_day_section_details_tweak">%1$s | 節次 %2$s-%3$s</string>
     <string name="course_time_day_time_details_tweak">%1$s | 時間 %2$s-%3$s</string>
+    <string name="tweak_mode_merge">合併 (A + B)</string>
+    <string name="tweak_mode_overwrite">覆蓋 (A → B)</string>
+    <string name="tweak_mode_exchange">交換 (A ↔ B)</string>
 
     <!-- 教務匯入 -->
     <string name="title_select_school">選擇學校</string>

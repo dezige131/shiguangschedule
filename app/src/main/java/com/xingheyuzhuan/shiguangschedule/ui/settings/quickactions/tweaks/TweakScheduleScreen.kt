@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoubleArrow
+import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
@@ -46,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
+import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository.TweakMode
 import com.xingheyuzhuan.shiguangschedule.ui.components.CourseTablePickerDialog
 import com.xingheyuzhuan.shiguangschedule.ui.components.DatePickerModal
 import java.time.Instant
@@ -54,12 +63,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/**
- * 调课页面主界面。
- *
- * @param viewModel 通过工厂方法注入的 TweakScheduleViewModel。
- * @param navController 用于处理导航的 NavController 实例。
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TweakScheduleScreen(
@@ -136,13 +139,8 @@ fun TweakScheduleScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = labelSelectTweakTable,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    TextButton(
-                        onClick = { showCourseTablePicker = true }
-                    ) {
+                    Text(text = labelSelectTweakTable, style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { showCourseTablePicker = true }) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text = uiState.selectedCourseTable?.name ?: actionSelectTable)
                             Icon(
@@ -160,16 +158,8 @@ fun TweakScheduleScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    DateButton(
-                        label = labelTweakFromDate,
-                        date = uiState.fromDate,
-                        onClick = { showFromDatePicker = true }
-                    )
-                    DateButton(
-                        label = labelTweakToDate,
-                        date = uiState.toDate,
-                        onClick = { showToDatePicker = true }
-                    )
+                    DateButton(label = labelTweakFromDate, date = uiState.fromDate, onClick = { showFromDatePicker = true })
+                    DateButton(label = labelTweakToDate, date = uiState.toDate, onClick = { showToDatePicker = true })
                 }
             }
 
@@ -183,27 +173,27 @@ fun TweakScheduleScreen(
 
             item {
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                val (modeIcon, _) = getTweakModeDisplayInfo(uiState.tweakMode)
+
                 if (isLandscape) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CourseDisplayCard(
-                            modifier = Modifier.weight(1f),
-                            title = titleTweakFromCourse,
-                            courses = uiState.fromCourses
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = a11yArrow,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        CourseDisplayCard(
-                            modifier = Modifier.weight(1f),
-                            title = titleTweakToCourse,
-                            courses = uiState.toCourses
-                        )
+                        CourseDisplayCard(modifier = Modifier.weight(1f), title = titleTweakFromCourse, courses = uiState.fromCourses)
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TweakModeSelector(currentMode = uiState.tweakMode, onModeSelected = { viewModel.onTweakModeChanged(it) })
+                            Icon(
+                                imageVector = modeIcon,
+                                contentDescription = a11yArrow,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        CourseDisplayCard(modifier = Modifier.weight(1f), title = titleTweakToCourse, courses = uiState.toCourses)
                     }
                 } else {
                     Column(
@@ -211,19 +201,36 @@ fun TweakScheduleScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        CourseDisplayCard(
-                            title = titleTweakFromCourse,
-                            courses = uiState.fromCourses
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDownward,
-                            contentDescription = a11yArrow,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        CourseDisplayCard(
-                            title = titleTweakToCourse,
-                            courses = uiState.toCourses
-                        )
+                        CourseDisplayCard(title = titleTweakFromCourse, courses = uiState.fromCourses)
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            val verticalIcon = when (uiState.tweakMode) {
+                                TweakMode.EXCHANGE -> Icons.Default.SyncAlt
+                                TweakMode.OVERWRITE -> Icons.Default.DoubleArrow
+                                TweakMode.MERGE -> Icons.Default.ArrowDownward
+                            }
+
+                            val rotationAngle = if (uiState.tweakMode != TweakMode.MERGE) 90f else 0f
+
+                            Icon(
+                                imageVector = verticalIcon,
+                                contentDescription = a11yArrow,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .rotate(rotationAngle),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+
+                            TweakModeSelector(
+                                currentMode = uiState.tweakMode,
+                                onModeSelected = { viewModel.onTweakModeChanged(it) }
+                            )
+                        }
+
+                        CourseDisplayCard(title = titleTweakToCourse, courses = uiState.toCourses)
                     }
                 }
             }
@@ -234,39 +241,51 @@ fun TweakScheduleScreen(
         CourseTablePickerDialog(
             title = dialogTitleSelectExportTable,
             onDismissRequest = { showCourseTablePicker = false },
-            onTableSelected = {
-                viewModel.onCourseTableSelected(it)
-                showCourseTablePicker = false
-            }
+            onTableSelected = { viewModel.onCourseTableSelected(it); showCourseTablePicker = false }
         )
     }
 
     if (showFromDatePicker) {
-        DatePickerModal(
-            onDateSelected = {
-                it?.let {
-                    viewModel.onFromDateSelected(it.toLocalDate())
-                }
-            },
-            onDismiss = { showFromDatePicker = false }
-        )
+        DatePickerModal(onDateSelected = { it?.let { viewModel.onFromDateSelected(it.toLocalDate()) } }, onDismiss = { showFromDatePicker = false })
     }
 
     if (showToDatePicker) {
-        DatePickerModal(
-            onDateSelected = {
-                it?.let {
-                    viewModel.onToDateSelected(it.toLocalDate())
-                }
-            },
-            onDismiss = { showToDatePicker = false }
-        )
+        DatePickerModal(onDateSelected = { it?.let { viewModel.onToDateSelected(it.toLocalDate()) } }, onDismiss = { showToDatePicker = false })
     }
 }
 
-/**
- * 用于显示单个课程列表的卡片。
- */
+@Composable
+private fun TweakModeSelector(currentMode: TweakMode, onModeSelected: (TweakMode) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val (_, label) = getTweakModeDisplayInfo(currentMode)
+
+    Box {
+        TextButton(onClick = { expanded = true }) {
+            Text(text = label, style = MaterialTheme.typography.labelLarge)
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            TweakMode.entries.forEach { mode ->
+                val (mIcon, mLabel) = getTweakModeDisplayInfo(mode)
+                DropdownMenuItem(
+                    leadingIcon = { Icon(mIcon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    text = { Text(mLabel) },
+                    onClick = { onModeSelected(mode); expanded = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getTweakModeDisplayInfo(mode: TweakMode): Pair<ImageVector, String> {
+    return when (mode) {
+        TweakMode.MERGE -> Icons.AutoMirrored.Filled.ArrowForward to stringResource(R.string.tweak_mode_merge)
+        TweakMode.OVERWRITE -> Icons.Default.DoubleArrow to stringResource(R.string.tweak_mode_overwrite)
+        TweakMode.EXCHANGE -> Icons.Default.SyncAlt to stringResource(R.string.tweak_mode_exchange) // 改用 SyncAlt
+    }
+}
+
 @Composable
 fun CourseDisplayCard(title: String, courses: List<CourseWithWeeks>, modifier: Modifier = Modifier) {
     val textNoCourse = stringResource(R.string.text_no_course)
@@ -276,54 +295,21 @@ fun CourseDisplayCard(title: String, courses: List<CourseWithWeeks>, modifier: M
     Card(modifier = modifier) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = title, style = MaterialTheme.typography.titleLarge)
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 250.dp)
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 250.dp)) {
                 if (courses.isEmpty()) {
-                    item {
-                        Text(
-                            text = textNoCourse,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
+                    item { Text(text = textNoCourse, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(8.dp)) }
                 } else {
                     items(courses) { courseWithWeeks ->
                         val course = courseWithWeeks.course
-
                         val dayString = getLocalizedDayString(course.day)
-
                         val detailsText = if (course.isCustomTime) {
-                            val startTime = course.customStartTime ?: "??:??"
-                            val endTime = course.customEndTime ?: "??:??"
-
-                            stringResource(
-                                id = customTimeFormatRes,
-                                dayString,
-                                startTime,
-                                endTime
-                            )
+                            stringResource(id = customTimeFormatRes, dayString, course.customStartTime ?: "??:??", course.customEndTime ?: "??:??")
                         } else {
-                            stringResource(
-                                id = sectionFormatRes,
-                                dayString,
-                                course.startSection.toString(),
-                                course.endSection.toString()
-                            )
+                            stringResource(id = sectionFormatRes, dayString, course.startSection.toString(), course.endSection.toString())
                         }
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                             Text(text = course.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                text = detailsText, // 使用修正后的文本
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            Text(text = detailsText, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -332,9 +318,6 @@ fun CourseDisplayCard(title: String, courses: List<CourseWithWeeks>, modifier: M
     }
 }
 
-/**
- * 日期选择按钮。
- */
 @Composable
 private fun DateButton(label: String, date: LocalDate, onClick: () -> Unit) {
     val configuration = LocalConfiguration.current
@@ -344,40 +327,16 @@ private fun DateButton(label: String, date: LocalDate, onClick: () -> Unit) {
         val finalFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(bestPattern, currentLocale)
         date.format(finalFormatter)
     }
-
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall
-        )
-        TextButton(onClick = onClick) {
-            Text(
-                text = dateDisplay,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
+        Text(text = label, style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = onClick) { Text(text = dateDisplay, style = MaterialTheme.typography.titleMedium) }
     }
 }
 
-/**
- * 辅助函数：将 Long 毫秒转换为 LocalDate
- */
-private fun Long.toLocalDate(): LocalDate =
-    Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
+private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
 
-/**
- * 辅助 Composable 函数：将数字星期转换为本地化的字符串资源。
- * 复用 strings.xml 中的 `week_days_full_names` 数组。
- */
 @Composable
 private fun getLocalizedDayString(day: Int): String {
-    // 星期从 1 (周一) 到 7 (周日)。数组索引从 0 开始。
     val weekDays = stringArrayResource(R.array.week_days_full_names)
-
-    // 校验 day 的有效范围 (1-7)
-    return if (day in 1..7) {
-        weekDays[day - 1] // 1 -> index 0, 7 -> index 6
-    } else {
-        stringResource(R.string.text_error)
-    }
+    return if (day in 1..7) weekDays[day - 1] else stringResource(R.string.text_error)
 }

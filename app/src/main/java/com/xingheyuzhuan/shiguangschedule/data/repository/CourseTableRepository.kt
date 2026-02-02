@@ -99,12 +99,23 @@ class CourseTableRepository(
         courseDao.updateCourseColorById(courseId, newColorInt)
     }
 
-
     /**
      * 插入或更新一个课程，并同时更新其对应的周数列表。
+     * 通过先检查是否存在，决定使用 @Update 还是 @Insert，
+     * 从而在更新课程属性时保护 course_weeks 表不被级联删除误伤。
      */
+    @Transaction
     suspend fun upsertCourse(course: Course, weekNumbers: List<Int>) {
-        courseDao.insertAll(listOf(course))
+        // 逻辑判断：如果数据库里已经有这个 ID
+        if (courseDao.exists(course.id)) {
+            // 使用 @Update 精准修改字段。
+            courseDao.update(course)
+        } else {
+            // 如果是新 ID，则执行插入。
+            courseDao.insertAll(listOf(course))
+        }
+
+        // 更新周次关联
         val courseWeeks = weekNumbers.map { week ->
             CourseWeek(courseId = course.id, weekNumber = week)
         }
@@ -142,68 +153,103 @@ class CourseTableRepository(
         courseDao.deleteCoursesByNames(tableId, courseNames)
     }
 
+    // 在类内部定义枚举
+    enum class TweakMode {
+        MERGE,      // 数据合并：A -> B (单箭头)
+        OVERWRITE,  // 数据覆盖：A >> B (双箭头)
+        EXCHANGE    // 数据交换：A <-> B (双向箭头)
+    }
+
     /**
-     * 将指定日期（由星期和周次确定）下的所有课程调动到新日期。
-     * 这是一个原子操作，确保数据一致性。
-     *
-     * @param courseTableId 用户选择的课表ID。
-     * @param fromWeekNumber 被移动的周次。
-     * @param fromDay 被移动的星期。
-     * @param toWeekNumber 移动到的周次。
-     * @param toDay 移动到的星期。
+     * 执行调课操作
+     * @param mode 传入 TweakMode.MERGE, TweakMode.OVERWRITE 或 TweakMode.EXCHANGE
      */
     @Transaction
-    suspend fun moveCoursesOnDate(
+    suspend fun tweakCoursesOnDate(
+        mode: TweakMode,
         courseTableId: String,
-        fromWeekNumber: Int,
+        fromWeek: Int,
         fromDay: Int,
-        toWeekNumber: Int,
+        toWeek: Int,
         toDay: Int
     ) {
-        // 1. 获取所有待移动的课程
-        val coursesWithWeeksToMove = courseDao.getCoursesWithWeeksByDayAndWeek(
-            courseTableId = courseTableId,
-            day = fromDay,
-            weekNumber = fromWeekNumber
-        ).first()
+        // 1. 获取来源(A)和目标(B)的数据快照
+        val sourceList = courseDao.getCoursesWithWeeksByDayAndWeek(courseTableId, fromDay, fromWeek).first()
+        val targetList = courseDao.getCoursesWithWeeksByDayAndWeek(courseTableId, toDay, toWeek).first()
 
-        // 2. 收集所有需要插入的新课程和新周次记录
-        val newCoursesToInsert = mutableListOf<Course>()
-        val newCourseWeeksToInsert = mutableListOf<CourseWeek>()
-        val courseIdsToUpdate = mutableListOf<String>()
+        when (mode) {
+            TweakMode.MERGE -> {
+                // 直接移动 A -> B
+                executeMoveInternal(sourceList, toWeek, toDay, fromWeek)
+            }
 
-        // 3. 遍历并处理每一门课程
-        for (courseWithWeeks in coursesWithWeeksToMove) {
-            val originalCourse = courseWithWeeks.course
+            TweakMode.OVERWRITE -> {
+                // 先删目标日期的周次，再移动 A -> B
+                if (targetList.isNotEmpty()) {
+                    val targetIds = targetList.map { it.course.id }
+                    courseWeekDao.deleteCourseWeeksForCourseAndWeek(targetIds, toWeek)
+                }
+                executeMoveInternal(sourceList, toWeek, toDay, fromWeek)
+            }
 
-            // 收集原始课程的ID，用于批量删除
-            courseIdsToUpdate.add(originalCourse.id)
+            TweakMode.EXCHANGE -> {
+                // 互换：先切断双方现有周次联系
+                if (sourceList.isNotEmpty()) {
+                    courseWeekDao.deleteCourseWeeksForCourseAndWeek(sourceList.map { it.course.id }, fromWeek)
+                }
+                if (targetList.isNotEmpty()) {
+                    courseWeekDao.deleteCourseWeeksForCourseAndWeek(targetList.map { it.course.id }, toWeek)
+                }
+                // 执行交叉移动 (originalWeek = -1 表示不重复执行删除逻辑)
+                executeMoveInternal(sourceList, toWeek, toDay, -1)
+                executeMoveInternal(targetList, fromWeek, fromDay, -1)
+            }
+        }
+    }
 
-            // 创建新的课程
-            val newCourse = originalCourse.copy(
-                id = UUID.randomUUID().toString(),
-                day = toDay
-            )
-            // 创建新的周次记录
-            val newCourseWeek = CourseWeek(courseId = newCourse.id, weekNumber = toWeekNumber)
+    /**
+     * 内部辅助函数：处理课程的物理移动或多周拆分逻辑
+     */
+    private suspend fun executeMoveInternal(
+        items: List<CourseWithWeeks>,
+        targetWeek: Int,
+        targetDay: Int,
+        originalWeek: Int
+    ) {
+        if (items.isEmpty()) return
 
-            // 将新数据添加到待插入列表中
-            newCoursesToInsert.add(newCourse)
-            newCourseWeeksToInsert.add(newCourseWeek)
+        val newCourses = mutableListOf<Course>()
+        val newWeeks = mutableListOf<CourseWeek>()
+        val oldIdsToRemove = mutableListOf<String>()
+
+        for (item in items) {
+            val course = item.course
+            // 判断是否为单周课程
+            val isSingleWeek = item.weeks.size <= 1
+
+            if (isSingleWeek) {
+                // 优化：只有一周的课，直接更新 Course 表的 Day 字段
+                courseDao.update(course.copy(day = targetDay))
+                if (originalWeek != -1) {
+                    courseWeekDao.deleteCourseWeeksForCourseAndWeek(listOf(course.id), originalWeek)
+                }
+                courseWeekDao.insertAll(listOf(CourseWeek(courseId = course.id, weekNumber = targetWeek)))
+            } else {
+                // 优化：多周课，克隆新 ID 专门用于目标日期
+                val newId = UUID.randomUUID().toString()
+                newCourses.add(course.copy(id = newId, day = targetDay))
+                newWeeks.add(CourseWeek(courseId = newId, weekNumber = targetWeek))
+                if (originalWeek != -1) oldIdsToRemove.add(course.id)
+            }
         }
 
-        // 4. 执行批量数据库操作
-        // 批量删除旧的周次记录
-        if (courseIdsToUpdate.isNotEmpty()) {
-            courseWeekDao.deleteCourseWeeksForCourseAndWeek(courseIdsToUpdate, fromWeekNumber)
+        // 批量执行数据库变更
+        if (oldIdsToRemove.isNotEmpty()) {
+            courseWeekDao.deleteCourseWeeksForCourseAndWeek(oldIdsToRemove, originalWeek)
         }
-
-        // 批量插入新的课程和周次记录
-        if (newCoursesToInsert.isNotEmpty()) {
-            courseDao.insertAll(newCoursesToInsert)
-        }
-        if (newCourseWeeksToInsert.isNotEmpty()) {
-            courseWeekDao.insertAll(newCourseWeeksToInsert)
+        if (newCourses.isNotEmpty()) {
+            courseDao.insertAll(newCourses)
+            courseWeekDao.insertAll(newWeeks)
         }
     }
 

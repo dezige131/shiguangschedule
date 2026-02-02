@@ -337,6 +337,9 @@
     <string name="error_tweak_failed">Schedule adjustment failed: %1$s</string>
     <string name="course_time_day_section_details_tweak">%1$s | Periods %2$s-%3$s</string>
     <string name="course_time_day_time_details_tweak">%1$s | Time: %2$s - %3$s</string>
+    <string name="tweak_mode_merge">Merge (A + B)</string>
+    <string name="tweak_mode_overwrite">Overwrite (A → B)</string>
+    <string name="tweak_mode_exchange">Exchange (A ↔ B)</string>
 
     <!-- Academic System Import -->
     <string name="title_select_school">Select school</string>

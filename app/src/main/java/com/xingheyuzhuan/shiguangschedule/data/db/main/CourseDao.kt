@@ -5,13 +5,14 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Delete
+import androidx.room.Update
 import androidx.room.RoomWarnings
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Room 数据访问对象 (DAO)，用于操作课程 (Course) 数据表。
- * 已更新以支持标准节次和自定义时间字段的混合排序。
+ * 已更新以支持标准节次和自定义时间字段的混合排序，并增加了精准更新支持。
  */
 @Dao
 interface CourseDao {
@@ -35,7 +36,7 @@ interface CourseDao {
 
     /**
      * 获取指定课表ID的所有课程，并包含其对应的周数。
-     * 排序逻辑与上面保持一致，确保关联查询结果的顺序正确。
+     * 排序逻辑与上面保持一致，确保关联查询结果的顺序正确字段。
      */
     @Transaction
     @Query(
@@ -52,9 +53,26 @@ interface CourseDao {
     fun getCoursesWithWeeksByTableId(courseTableId: String): Flow<List<CourseWithWeeks>>
 
     /**
-     * 插入一个或多个课程。如果发生主键冲突，则替换旧数据。
+     * 检查指定 ID 的课程是否存在。
+     * 用于 Repository 判断是执行插入(Insert)还是精准更新(Update)。
      */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Query("SELECT EXISTS(SELECT 1 FROM courses WHERE id = :courseId)")
+    suspend fun exists(courseId: String): Boolean
+
+    /**
+     * 更新现有的课程信息。
+     * 相比 REPLACE，使用 @Update 仅修改字段而不删除行，因此不会触发级联删除。
+     * 适用于调课、修改颜色或名称等不希望触动其他周次数据的场景。
+     */
+    @Update
+    suspend fun update(course: Course)
+
+    /**
+     * 插入一个或多个课程。
+     * 策略调整为 ABORT，配合 Repository 的 exists 检查使用。
+     * 确保只有在新课程时才执行插入，避免意外覆盖导致的级联数据丢失。
+     */
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAll(courses: List<Course>)
 
     /**
