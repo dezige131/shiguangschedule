@@ -1,6 +1,6 @@
 package com.xingheyuzhuan.shiguangschedule
 
-import android.net.Uri // 必须导入 Uri 来进行 URL 编码
+import android.net.Uri
 
 sealed class Screen(val route: String) {
     object CourseSchedule : Screen("course_schedule")
@@ -52,8 +52,11 @@ sealed class Screen(val route: String) {
 
     object UpdateRepo : Screen("update_repo")
 
+    object QuickActions : Screen("quick_actions")
+
     object TweakSchedule : Screen("tweak_schedule")
 
+    object QuickDelete : Screen("quick_delete")
     object ContributionList : Screen("contribution_list")
 
     object CourseManagementList : Screen("course_management_list")

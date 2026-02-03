@@ -88,7 +88,7 @@ fun ManageCourseTablesScreen(
     val dialogTitleEditTable = stringResource(R.string.dialog_title_edit_table)
     val a11ySave = stringResource(R.string.a11y_save)
     val toastEditSuccess = stringResource(R.string.toast_edit_table_success)
-    val dialogTitleConfirmDelete = stringResource(R.string.dialog_title_confirm_delete)
+    val dialogTitleConfirmDelete = stringResource(R.string.confirm_delete)
     val dialogTextConfirmDelete = stringResource(R.string.dialog_text_confirm_delete)
     val actionDelete = stringResource(R.string.a11y_delete) // 复用 a11y_delete 作为按钮文本
     val toastDeleteSuccess = stringResource(R.string.toast_delete_table_success)

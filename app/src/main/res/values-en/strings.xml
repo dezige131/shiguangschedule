@@ -18,6 +18,7 @@
     <string name="action_deselect_all">Deselect All</string>
     <string name="a11y_state_selected">Selected</string>
     <string name="a11y_state_not_selected">Not selected</string>
+    <string name="confirm_delete">Confirm Delete</string>
     
     <!-- Main Interface and Today's Schedule -->
     <string name="nav_today_schedule">Today</string>
@@ -213,7 +214,6 @@
     <string name="toast_add_table_success">Schedule \'%1$s\' added</string>
     <string name="dialog_title_edit_table">Edit schedule name</string>
     <string name="toast_edit_table_success">Schedule name updated</string>
-    <string name="dialog_title_confirm_delete">Confirm delete</string>
     <string name="dialog_text_confirm_delete">Are you sure you want to delete schedule \'%1$s\'? This cannot be undone.</string>
     <string name="toast_delete_table_success">%1$s deleted</string>
     <string name="toast_delete_last_table_failed">Cannot delete the last schedule</string>
@@ -337,6 +337,9 @@
     <string name="error_tweak_failed">Schedule adjustment failed: %1$s</string>
     <string name="course_time_day_section_details_tweak">%1$s | Periods %2$s-%3$s</string>
     <string name="course_time_day_time_details_tweak">%1$s | Time: %2$s - %3$s</string>
+    <string name="tweak_mode_merge">Merge (A + B)</string>
+    <string name="tweak_mode_overwrite">Overwrite (A → B)</string>
+    <string name="tweak_mode_exchange">Exchange (A ↔ B)</string>
 
     <!-- Academic System Import -->
     <string name="title_select_school">Select school</string>
@@ -453,5 +456,27 @@
     <string name="action_reset_style">Reset to default style</string>
     <string name="dialog_reset_title">Reset Style</string>
     <string name="dialog_reset_message">Are you sure you want to reset all style settings to default? This action cannot be undone.</string>
+
+    <!-- Quick Actions -->
+    <string name="item_quick_actions">Quick Actions</string>
+    <string name="desc_quick_actions">Includes schedule tweaks, temporary changes, etc.</string>
+    <string name="label_quick_action_category_schedule">Schedule Adjustments</string>
+    <string name="item_quick_delete">Quick Delete Courses</string>
+    <string name="quick_delete_subtitle">Batch clear schedule by weeks, days, or dates</string>
+
+    <!-- Quick Delete Courses -->
+    <string name="label_dimension_weeks_days">Method 1: By Weeks &amp; Days</string>
+    <string name="label_dimension_dates">Method 2: By Specific Dates</string>
+    <string name="hint_no_selection">Please select weeks, days, or dates</string>
+    <string name="hint_affected_count">%1$d course records will be removed</string>
+    <string name="dialog_delete_confirm_msg">This action cannot be undone. Affected records will be erased from the selected time points, but basic course info will remain.</string>
+    <string name="btn_add_date">Add Date</string>
+    <string name="quick_delete_filter_weeks_days_hint">Set recurring weeks &amp; days (Optional)</string>
+    <string name="quick_delete_filter_date_range_hint">Set specific date range (Optional)</string>
+    <string name="quick_delete_label_days_prefix">Days: %1$s</string>
+    <string name="quick_delete_dialog_select_date_title">Select Date Range</string>
+    <string name="quick_delete_success">Schedule cleared successfully</string>
+    <string name="error_load_failed">Failed to initialize, please try again</string>
+    <string name="error_op_failed">Operation failed: %1$s</string>
 
 </resources>

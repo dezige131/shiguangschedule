@@ -124,7 +124,7 @@ fun SettingsScreen(
                     onSemesterTotalWeeksClick = { showTotalWeeksDialog = true },
                     onManualWeekClick = { showManualWeekDialog = true },
                     onFirstDayOfWeekClick = { showFirstDayOfWeekDialog = true },
-                    onTweakScheduleClick = { navController.navigate(Screen.TweakSchedule.route) }
+                    onQuickActionsClick = { navController.navigate(Screen.QuickActions.route) }
                 )
             }
             item {
@@ -202,7 +202,7 @@ private fun GeneralSettingsSection(
     onSemesterTotalWeeksClick: () -> Unit,
     onManualWeekClick: () -> Unit,
     onFirstDayOfWeekClick: () -> Unit,
-    onTweakScheduleClick: () -> Unit
+    onQuickActionsClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -284,11 +284,11 @@ private fun GeneralSettingsSection(
                 )
             }
 
-            // 课程调动设置项
+            // 快捷操作页面
             SettingItem(
-                title = stringResource(R.string.item_schedule_tweak),
-                subtitle = stringResource(R.string.desc_schedule_tweak),
-                onClick = onTweakScheduleClick
+                title = stringResource(R.string.item_quick_actions),
+                subtitle = stringResource(R.string.desc_quick_actions),
+                onClick = onQuickActionsClick
             )
         }
     }

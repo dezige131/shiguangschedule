@@ -18,6 +18,7 @@
     <string name="action_deselect_all">取消全選</string>
     <string name="a11y_state_selected">已選取</string>
     <string name="a11y_state_not_selected">未選取</string>
+    <string name="confirm_delete">確認刪除</string>
     
     <!-- 主介面及今日課表 -->
     <string name="nav_today_schedule">今日課表</string>
@@ -213,7 +214,6 @@
     <string name="toast_add_table_success">課表 \'%1$s\' 已新增</string>
     <string name="dialog_title_edit_table">編輯課表名稱</string>
     <string name="toast_edit_table_success">課表名稱已更新</string>
-    <string name="dialog_title_confirm_delete">確認刪除</string>
     <string name="dialog_text_confirm_delete">您確定要刪除課表 \'%1$s\' 嗎？此操作無法復原。</string>
     <string name="toast_delete_table_success">%1$s 已刪除</string>
     <string name="toast_delete_last_table_failed">不能刪除最後一個課表</string>
@@ -337,6 +337,9 @@
     <string name="error_tweak_failed">調課失敗：%1$s</string>
     <string name="course_time_day_section_details_tweak">%1$s | 節次 %2$s-%3$s</string>
     <string name="course_time_day_time_details_tweak">%1$s | 時間 %2$s-%3$s</string>
+    <string name="tweak_mode_merge">合併 (A + B)</string>
+    <string name="tweak_mode_overwrite">覆蓋 (A → B)</string>
+    <string name="tweak_mode_exchange">交換 (A ↔ B)</string>
 
     <!-- 教務匯入 -->
     <string name="title_select_school">選擇學校</string>
@@ -453,5 +456,27 @@
     <string name="action_reset_style">恢復預設樣式設置</string>
     <string name="dialog_reset_title">重置樣式</string>
     <string name="dialog_reset_message">確定要將所有樣式設置恢復為預設值嗎？此操作不可撤銷。</string>
+
+    <!-- 快捷操作 -->
+    <string name="item_quick_actions">快捷操作</string>
+    <string name="desc_quick_actions">包含調課、課程臨時變動等功能</string>
+    <string name="label_quick_action_category_schedule">課表調整</string>
+    <string name="item_quick_delete">快速刪除課程</string>
+    <string name="quick_delete_subtitle">按周次、星期或特定日期批量清理課表</string>
+
+    <!-- 快速刪除課程 -->
+    <string name="label_dimension_weeks_days">維度一：按周次和星期</string>
+    <string name="label_dimension_dates">維度二：按特定日期</string>
+    <string name="hint_no_selection">請選擇周次、星期或日期</string>
+    <string name="hint_affected_count">預計從課表中移除 %1$d 節課程記錄</string>
+    <string name="dialog_delete_confirm_msg">此操作不可撤銷。受影響的課程記錄將從選定的時間點中抹除，但課程的基礎資訊仍會保留。</string>
+    <string name="btn_add_date">添加日期</string>
+    <string name="quick_delete_filter_weeks_days_hint">設置重複周次與星期 (可選)</string>
+    <string name="quick_delete_filter_date_range_hint">設置特定日期範圍 (可選)</string>
+    <string name="quick_delete_label_days_prefix">星期: %1$s</string>
+    <string name="quick_delete_dialog_select_date_title">選擇日期範圍</string>
+    <string name="quick_delete_success">課表清理成功</string>
+    <string name="error_load_failed">初始化失敗，請重試</string>
+    <string name="error_op_failed">操作失敗: %1$s</string>
 
 </resources>

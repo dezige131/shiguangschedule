@@ -1,4 +1,4 @@
-package com.xingheyuzhuan.shiguangschedule.ui.settings.tweaks
+package com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
@@ -32,6 +32,7 @@ data class TweakScheduleUiState(
     val toDate: LocalDate = LocalDate.now(),
     val fromCourses: List<CourseWithWeeks> = emptyList(),
     val toCourses: List<CourseWithWeeks> = emptyList(),
+    val tweakMode: CourseTableRepository.TweakMode = CourseTableRepository.TweakMode.MERGE,
 
     // 业务逻辑和状态管理所需的数据
     val isSemesterSet: Boolean = false,
@@ -43,7 +44,6 @@ data class TweakScheduleUiState(
 
 /**
  * 课程调动页面的 ViewModel。
- * 采用命令式状态管理模式，所有状态更新都由显式函数调用触发。
  */
 class TweakScheduleViewModel(
     private val appSettingsRepository: AppSettingsRepository,
@@ -55,27 +55,24 @@ class TweakScheduleViewModel(
     private val _uiState = MutableStateFlow(TweakScheduleUiState())
     val uiState: StateFlow<TweakScheduleUiState> = _uiState.asStateFlow()
 
-    // 内部 Flow 用于存储用户选择，但它们不再参与 combine 管道，仅作为稳定数据源
+    // 内部存储用户选择的私有 Flow
     private val _fromDate = MutableStateFlow(LocalDate.now())
     private val _toDate = MutableStateFlow(LocalDate.now())
     private val _selectedCourseTableByUser = MutableStateFlow<CourseTable?>(null)
 
     init {
-        // ViewModel 初始化时，仅加载一次初始数据
         viewModelScope.launch {
             refreshUiState(isInitialLoad = true)
         }
     }
 
     /**
-     * 显式地加载所有依赖数据（配置、课表、课程）并一次性更新 UI 状态。
+     * 刷新 UI 状态：加载配置、课表以及预览区域的课程。
      */
     private suspend fun refreshUiState(isInitialLoad: Boolean = false) {
-        // 1. 获取所有依赖数据的快照（不再持续监听）
         val settings = appSettingsRepository.getAppSettings().first()
         val allTables = courseTableRepository.getAllCourseTables().first()
 
-        // 2. 确定当前选中的课表
         val selectedTable = if (isInitialLoad) {
             val defaultSelectedTable = if (settings.currentCourseTableId != null) {
                 allTables.find { it.id == settings.currentCourseTableId }
@@ -88,11 +85,9 @@ class TweakScheduleViewModel(
             _selectedCourseTableByUser.value
         }
 
-        // 3. 确定日期，使用内部 Flow 的当前值 (用户设置的稳定值)
         val currentFromDate = _fromDate.value
         val currentToDate = _toDate.value
 
-        // 4.获取 CourseTableConfig
         val currentTableId = selectedTable?.id
         val courseConfig = if (currentTableId != null) {
             appSettingsRepository.getCourseConfigOnce(currentTableId)
@@ -111,19 +106,16 @@ class TweakScheduleViewModel(
         var fromCourses = emptyList<CourseWithWeeks>()
         var toCourses = emptyList<CourseWithWeeks>()
 
-        // 6. 查询课程
         if (isSemesterSet && selectedTable != null) {
             val fromWeekNumber = ChronoUnit.WEEKS.between(semesterStartDate, currentFromDate).toInt() + 1
             val fromDay = currentFromDate.dayOfWeek.value
             val toWeekNumber = ChronoUnit.WEEKS.between(semesterStartDate, currentToDate).toInt() + 1
             val toDay = currentToDate.dayOfWeek.value
 
-            // 显式获取课程数据快照
             fromCourses = courseTableRepository.getCoursesForDay(selectedTable.id, fromWeekNumber, fromDay).first()
             toCourses = courseTableRepository.getCoursesForDay(selectedTable.id, toWeekNumber, toDay).first()
         }
 
-        // 7. 一次性原子更新 UI 状态
         _uiState.update {
             it.copy(
                 allCourseTables = allTables,
@@ -139,27 +131,24 @@ class TweakScheduleViewModel(
         }
     }
 
+    // 响应 UI 层更改调课模式
+    fun onTweakModeChanged(mode: CourseTableRepository.TweakMode) {
+        _uiState.update { it.copy(tweakMode = mode) }
+    }
 
-    // 处理用户交互的函数：更新内部 Flow 后，显式调用 refreshUiState()
     fun onCourseTableSelected(courseTable: CourseTable) {
         _selectedCourseTableByUser.value = courseTable
-        viewModelScope.launch {
-            refreshUiState()
-        }
+        viewModelScope.launch { refreshUiState() }
     }
 
     fun onFromDateSelected(date: LocalDate) {
         _fromDate.value = date
-        viewModelScope.launch {
-            refreshUiState()
-        }
+        viewModelScope.launch { refreshUiState() }
     }
 
     fun onToDateSelected(date: LocalDate) {
         _toDate.value = date
-        viewModelScope.launch {
-            refreshUiState()
-        }
+        viewModelScope.launch { refreshUiState() }
     }
 
     /**
@@ -168,79 +157,63 @@ class TweakScheduleViewModel(
     fun moveCourses() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null, successMessage = null) }
-            _uiState.value.let { state ->
-                val resources = application.resources
 
-                if (state.selectedCourseTable == null || state.semesterStartDate == null) {
-                    val errorMsg = resources.getString(R.string.error_tweak_no_table_or_semester)
-                    _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
-                    return@launch
-                }
+            val state = _uiState.value
+            val resources = application.resources
 
-                val semesterStartDate: LocalDate = state.semesterStartDate
+            if (state.selectedCourseTable == null || state.semesterStartDate == null) {
+                val errorMsg = resources.getString(R.string.error_tweak_no_table_or_semester)
+                _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
+                return@launch
+            }
 
-                if (state.fromDate == state.toDate) {
-                    val errorMsg = resources.getString(R.string.error_tweak_same_day)
-                    _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
-                    return@launch
-                }
+            if (state.fromDate == state.toDate) {
+                val errorMsg = resources.getString(R.string.error_tweak_same_day)
+                _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
+                return@launch
+            }
 
-                // 使用 UI 状态中稳定的日期快照进行计算
-                val currentFromDate = state.fromDate
-                val currentToDate = state.toDate
+            try {
+                val semesterStartDate = state.semesterStartDate
+                val fromWeek = ChronoUnit.WEEKS.between(semesterStartDate, state.fromDate).toInt() + 1
+                val fromDay = state.fromDate.dayOfWeek.value
+                val toWeek = ChronoUnit.WEEKS.between(semesterStartDate, state.toDate).toInt() + 1
+                val toDay = state.toDate.dayOfWeek.value
 
-                try {
-                    val fromWeekNumber = ChronoUnit.WEEKS.between(semesterStartDate, currentFromDate).toInt() + 1
-                    val fromDay = currentFromDate.dayOfWeek.value
-                    val toWeekNumber = ChronoUnit.WEEKS.between(semesterStartDate, currentToDate).toInt() + 1
-                    val toDay = currentToDate.dayOfWeek.value
+                courseTableRepository.tweakCoursesOnDate(
+                    mode = state.tweakMode, // 传入当前选中的模式
+                    courseTableId = state.selectedCourseTable.id,
+                    fromWeek = fromWeek,
+                    fromDay = fromDay,
+                    toWeek = toWeek,
+                    toDay = toDay
+                )
 
-                    // 1. 执行数据库操作
-                    courseTableRepository.moveCoursesOnDate(
-                        courseTableId = state.selectedCourseTable.id,
-                        fromWeekNumber = fromWeekNumber,
-                        fromDay = fromDay,
-                        toWeekNumber = toWeekNumber,
-                        toDay = toDay
-                    )
+                // 操作成功后刷新预览
+                refreshUiState()
 
-                    refreshUiState()
+                val successMsg = resources.getString(R.string.toast_tweak_success)
+                _uiState.update { it.copy(isLoading = false, successMessage = successMsg) }
 
-                    val successMsg = resources.getString(R.string.toast_tweak_success)
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            successMessage = successMsg
-                        )
-                    }
-
-                } catch (e: Exception) {
-                    val errorMsgFormat = resources.getString(R.string.error_tweak_failed)
-                    val errorMsg = String.format(errorMsgFormat, e.message)
-                    _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
-                }
+            } catch (e: Exception) {
+                val errorMsgFormat = resources.getString(R.string.error_tweak_failed)
+                val errorMsg = String.format(errorMsgFormat, e.message)
+                _uiState.update { it.copy(isLoading = false, errorMessage = errorMsg) }
             }
         }
     }
 
-    /**
-     * 重置消息状态，用于UI显示Toast后清除。
-     */
     fun resetMessages() {
-        _uiState.update { currentState ->
-            currentState.copy(errorMessage = null, successMessage = null)
-        }
+        _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
 }
 
 /**
- * TweakScheduleViewModel 的工厂类，用于依赖注入。
- * 更新工厂以传递 Application 实例。
+ * 工厂类
  */
 object TweakScheduleViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-
         if (modelClass.isAssignableFrom(TweakScheduleViewModel::class.java)) {
             val myApplication = application as MyApplication
             @Suppress("UNCHECKED_CAST")

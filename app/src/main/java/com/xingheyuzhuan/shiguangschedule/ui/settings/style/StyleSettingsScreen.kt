@@ -68,7 +68,7 @@ fun StyleSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.item_personalization), style = MaterialTheme.typography.titleMedium) },
+                title = { Text(text = stringResource(R.string.item_personalization), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.a11y_back))

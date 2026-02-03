@@ -31,9 +31,11 @@ import com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement.CourseIns
 import com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement.CourseNameListScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.coursetables.ManageCourseTablesScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.notification.NotificationSettingsScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.QuickActionsScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.delete.QuickDeleteScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.style.StyleSettingsScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.time.TimeSlotManagementScreen
-import com.xingheyuzhuan.shiguangschedule.ui.settings.tweaks.TweakScheduleScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks.TweakScheduleScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.update.UpdateRepoScreen
 import com.xingheyuzhuan.shiguangschedule.ui.theme.ShiguangScheduleTheme
 import com.xingheyuzhuan.shiguangschedule.ui.today.TodayScheduleScreen
@@ -241,6 +243,15 @@ fun AppNavigation() {
             UpdateRepoScreen(navController = navController)
         }
         composable(
+            Screen.QuickActions.route,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) {
+            QuickActionsScreen(navController = navController)
+        }
+        composable(
             Screen.TweakSchedule.route,
             enterTransition = { EnterTransition.None },
             exitTransition = { ExitTransition.None },
@@ -297,6 +308,16 @@ fun AppNavigation() {
             popExitTransition = { ExitTransition.None }
         ) {
             StyleSettingsScreen(navController = navController)
+        }
+        // 快速删除课程页面
+        composable(
+            Screen.QuickDelete.route,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
+        ) {
+            QuickDeleteScreen(navController = navController)
         }
     }
 }

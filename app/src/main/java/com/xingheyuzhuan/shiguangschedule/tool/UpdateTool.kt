@@ -81,43 +81,35 @@ class UpdateChecker(private val context: Context) {
     /** 检查是否有新版本可用 */
     suspend fun checkUpdate(platformUrl: String): UpdateStatus = withContext(Dispatchers.Default) {
         try {
-            // 1. 下载远程索引文件
+            // 下载并解析 JSON
             val request = Request.Builder().url(platformUrl).build()
             val indexJson = httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("更新索引文件下载失败: ${response.code} from $platformUrl")
-                }
-                val jsonString = response.body.string()
-                if (jsonString.isEmpty()) {
-                    throw IOException("更新索引文件内容为空")
-                }
-                jsonString
+                if (!response.isSuccessful) throw IOException("下载失败")
+                response.body.string()
             }
 
-            // 2. 解析 JSON 并获取当前 Flavor 的信息
+            // 获取当前 Flavor 信息
             val updateIndex = json.decodeFromString<UpdateIndex>(indexJson)
             val flavorInfo = when (currentFlavorId) {
                 "prod" -> updateIndex.prod
                 "dev" -> updateIndex.dev
-                else -> throw IllegalStateException("未知 Flavor ID: $currentFlavorId")
+                else -> throw IllegalStateException("未知 Flavor ID")
             }
 
-            // 3. 比较版本代码：如果远程版本代码 <= 本地版本代码，则已是最新
+            // 比较版本代码
             if (flavorInfo.latestVersionCode <= currentVersionCode) {
-                return@withContext UpdateStatus.Latest(currentVersionCode.toString())
+                return@withContext UpdateStatus.Latest(BuildConfig.VERSION_NAME)
             }
 
-            // 4. 匹配设备 ABI 以获取下载链接
+            // 匹配设备 ABI
             val deviceAbi = getDeviceAbi()
-
             val finalDownloadUrl = flavorInfo.downloadLinks[deviceAbi]
                 ?: flavorInfo.downloadLinks["universal"]
-                ?: throw IllegalStateException("未找到适合 ABI ($deviceAbi) 的下载链接")
+                ?: throw IllegalStateException("未找到适合 ABI 的下载链接")
 
             return@withContext UpdateStatus.Found(flavorInfo, finalDownloadUrl)
 
         } catch (e: Exception) {
-            // 移除所有调试和错误日志，静默返回错误状态
             return@withContext UpdateStatus.Error("检查更新失败: ${e.message ?: "未知错误"}")
         }
     }
