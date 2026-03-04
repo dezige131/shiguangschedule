@@ -61,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
@@ -106,7 +107,7 @@ fun WebViewScreen(
     val toastLoadImportFailedFmt = stringResource(R.string.toast_load_import_script_failed)
 
     var currentUrl by remember { mutableStateOf(initialUrl ?: "about:blank") }
-    var inputUrl by remember { mutableStateOf(initialUrl ?: "https://") }
+    var inputUrl by remember { mutableStateOf(if (startedEmpty) "" else (initialUrl ?: "")) }
     var loadingProgress by remember { mutableFloatStateOf(0f) }
     var pageTitle by remember {
         mutableStateOf(
@@ -138,29 +139,12 @@ fun WebViewScreen(
     val uiEventChannel = remember { Channel<WebUiEvent>(Channel.BUFFERED) }
     var androidBridge: AndroidBridge? by remember { mutableStateOf(null) }
 
-
     val webView = remember {
         WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-
-            // WebView 配置
-            @SuppressLint("SetJavaScriptEnabled")
-            settings.javaScriptEnabled = true
-            settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            settings.useWideViewPort = true
-            settings.setSupportZoom(true)
-            settings.builtInZoomControls = true
-            settings.displayZoomControls = false
-            settings.javaScriptCanOpenWindowsAutomatically = true
-            settings.domStorageEnabled = true
-            settings.allowFileAccess = true
-            settings.textZoom = 100
-            settings.userAgentString = defaultUserAgent
-            CookieManager.getInstance().setAcceptCookie(true)
-
 
             // 实例化 AndroidBridge
             androidBridge = AndroidBridge(
@@ -171,7 +155,6 @@ fun WebViewScreen(
                 courseConversionRepository = courseConversionRepository,
                 timeSlotRepository = timeSlotRepository,
                 onTaskCompleted = {
-                    // 使用预取的字符串
                     Toast.makeText(context, toastImportFinished, Toast.LENGTH_LONG).show()
                     navController.popBackStack(
                         route = courseScheduleRoute,
@@ -180,50 +163,52 @@ fun WebViewScreen(
                 }
             )
             addJavascriptInterface(androidBridge!!, "AndroidBridge")
-
-            // WebViewClient: 页面导航和加载事件
-            webViewClient = object : WebViewClient() {
-                @Deprecated("Deprecated in Java")
-                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                    return false
-                }
-
-                @SuppressLint("WebViewClientOnReceivedSslError")
-                override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-                    sslErrorHandleState = Pair(handler, error)
-                }
-
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                    view?.injectAllJavaScript(isDesktopMode)
-                }
-
-                override fun onReceivedError(view: WebView, request: android.webkit.WebResourceRequest, error: android.webkit.WebResourceError) {
-                    if (request.isForMainFrame) {
-                        val description = error.description.toString()
-                        val ctx = view.context
-                        view.post {
-                            Toast.makeText(ctx, ctx.getString(R.string.toast_web_load_error_format, description), Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
-
-            // WebChromeClient: 进度条和标题
-            webChromeClient = object : WebChromeClient() {
-                override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                    loadingProgress = newProgress / 100f
-                }
-
-                override fun onReceivedTitle(view: WebView?, title: String?) {
-                    if (title != null) {
-                        pageTitle = title
-                    }
-                }
-            }
-
-            loadUrl(initialUrl ?: "about:blank")
         }
+    }
+
+    LaunchedEffect(isDesktopMode) {
+        val compatDelegate = WebCompatDelegate(webView)
+
+        compatDelegate.enhanceSettings(isDesktopMode)
+
+        webView.settings.userAgentString = if (isDesktopMode) DESKTOP_USER_AGENT else defaultUserAgent
+
+        val businessClient = object : WebViewClient() {
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean = false
+
+            @SuppressLint("WebViewClientOnReceivedSslError")
+            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+                sslErrorHandleState = Pair(handler, error)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                view?.injectAllJavaScript(isDesktopMode)
+            }
+
+            override fun onReceivedError(view: WebView, request: android.webkit.WebResourceRequest, error: android.webkit.WebResourceError) {
+                if (request.isForMainFrame) {
+                    val description = error.description.toString()
+                    view.post {
+                        Toast.makeText(view.context, view.context.getString(R.string.toast_web_load_error_format, description), Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
+        val businessChrome = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                loadingProgress = newProgress / 100f
+            }
+            override fun onReceivedTitle(view: WebView?, title: String?) {
+                if (title != null) pageTitle = title
+            }
+        }
+
+        // 应用代理包装
+        webView.webViewClient = compatDelegate.wrapWebViewClient(businessClient, isDesktopMode)
+        webView.webChromeClient = compatDelegate.wrapWebChromeClient(businessChrome) { /* 进度在 internal 处理 */ }
     }
 
     // 状态改变时加载 URL
@@ -260,7 +245,7 @@ fun WebViewScreen(
         keyboardController?.hide()
         currentUrl = query
         isEditingUrl = false
-        pageTitle = titleLoading // 使用预取字符串
+        pageTitle = titleLoading
     }
 
     Scaffold(
@@ -270,7 +255,8 @@ fun WebViewScreen(
                     IconButton(onClick = {
                         if (isEditingUrl) {
                             isEditingUrl = false
-                            inputUrl = webView.url ?: currentUrl
+                            val rawUrl = webView.url
+                            inputUrl = if (rawUrl.isNullOrBlank() || rawUrl == "about:blank") "" else rawUrl
                             keyboardController?.hide()
                         } else {
                             navController.popBackStack()
@@ -308,7 +294,12 @@ fun WebViewScreen(
                             textStyle = MaterialTheme.typography.bodyLarge,
                         )
                     } else {
-                        Text(pageTitle, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = pageTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 },
 
@@ -327,7 +318,8 @@ fun WebViewScreen(
                         } else if (enableAddressBarToggleButton || startedEmpty) {
                             IconButton(onClick = {
                                 isEditingUrl = true
-                                inputUrl = webView.url?.takeIf { it.isNotBlank() && it != "about:blank" } ?: "https://"
+                                val rawUrl = webView.url
+                                inputUrl = if (rawUrl.isNullOrBlank() || rawUrl == "about:blank") "" else rawUrl
                                 keyboardController?.show()
                             }) {
                                 Icon(Icons.Default.Link, contentDescription = stringResource(R.string.a11y_enter_url))
@@ -342,14 +334,12 @@ fun WebViewScreen(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            // 刷新
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_refresh)) },
                                 onClick = { webView.reload(); expanded = false },
                                 leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.a11y_refresh)) }
                             )
 
-                            // 电脑/手机模式切换
                             val switchTextId = if (isDesktopMode) R.string.action_switch_to_phone_mode else R.string.action_switch_to_desktop_mode
                             val switchIcon = if (isDesktopMode) Icons.Filled.PhoneAndroid else Icons.Filled.DesktopWindows
 
@@ -357,17 +347,19 @@ fun WebViewScreen(
                                 text = { Text(stringResource(switchTextId)) },
                                 onClick = {
                                     isDesktopMode = !isDesktopMode
-                                    webView.settings.userAgentString = if (isDesktopMode) DESKTOP_USER_AGENT else defaultUserAgent
-                                    webView.settings.loadWithOverviewMode = !isDesktopMode
 
                                     val tText = if (isDesktopMode) toastSwitchedToDesktop else toastSwitchedToPhone
                                     Toast.makeText(context, tText, Toast.LENGTH_SHORT).show()
 
-                                    if (currentUrl.isNotBlank() && currentUrl != "about:blank") {
-                                        webView.loadUrl(currentUrl)
+                                    val urlToReload = webView.url
+                                    if (!urlToReload.isNullOrBlank() && urlToReload != "about:blank") {
+                                        webView.loadUrl(urlToReload)
+                                    } else if (inputUrl.isNotBlank()) {
+                                        currentUrl = inputUrl
                                     } else {
                                         Toast.makeText(context, toastUrlEmpty, Toast.LENGTH_LONG).show()
                                     }
+
                                     expanded = false
                                 },
                                 leadingIcon = {
@@ -437,14 +429,12 @@ fun WebViewScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-            // 渲染 WebView
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { webView },
                 update = {}
             )
 
-            // 加载进度条
             if (loadingProgress < 1.0f) {
                 LinearProgressIndicator(
                     progress = { loadingProgress },
@@ -468,9 +458,7 @@ fun WebViewScreen(
                         assetJsPath?.let { assetPath ->
                             try {
                                 androidBridge?.setImportTableId(selectedTable.id)
-
                                 val jsFile = File(context.filesDir, "repo/schools/resources/$assetPath")
-
                                 if (jsFile.exists()) {
                                     val jsCode = jsFile.readText()
                                     webView.evaluateJavascript(jsCode, null)
