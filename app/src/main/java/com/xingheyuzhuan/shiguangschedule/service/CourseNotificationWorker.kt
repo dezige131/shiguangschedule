@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -20,7 +21,10 @@ import kotlin.math.abs
 import androidx.core.content.edit
 
 /**
- * WorkManager 用于设置课程提醒闹钟的 Worker。
+ * 修改说明：
+ * 1. 增加了对 ACTION_CANCEL_LIVE_PROGRESS 闹钟的设置，确保课程结束时通知自动消失。
+ * 2. 优化了 setAlarmInternal，支持三种类型的闹钟：普通提醒、进度显示、进度取消。
+ * 3. 确保了 cancelAllAlarms 能够完整清理这三种闹钟。
  */
 class CourseNotificationWorker(
     appContext: Context,
@@ -35,14 +39,16 @@ class CourseNotificationWorker(
         private const val WIDGET_SYNC_DAYS = 7L
         private const val TAG = "CourseNotificationWorker"
 
-        // SharedPreferences 文件名，用于存储闹钟ID
         private const val ALARM_IDS_PREFS = "alarm_ids_prefs"
-        // 存储 ID 集合的键名
         private const val KEY_ACTIVE_ALARM_IDS = "active_alarm_ids"
+
+        // 内部前缀，用于区分同一课程的不同闹钟
+        private const val PREFIX_PROGRESS_SHOW = "progress_show_"
+        private const val PREFIX_PROGRESS_CANCEL = "progress_cancel_"
     }
 
     override suspend fun doWork(): Result {
-        Log.i(TAG, "Worker 任务已启动，正在检查提醒设置...")
+        Log.i(TAG, "Worker 任务已启动...")
         return try {
             val appSettings = appSettingsRepository.getAppSettings().first()
 
@@ -53,40 +59,66 @@ class CourseNotificationWorker(
             }
 
             val remindBeforeMinutes = appSettings.remindBeforeMinutes
-            Log.i(TAG, "提醒功能已开启，将提前 $remindBeforeMinutes 分钟提醒。")
-
             val today = LocalDate.now()
             val startDate = today.format(DateTimeFormatter.ISO_LOCAL_DATE)
             val endDate = today.plusDays(WIDGET_SYNC_DAYS).format(DateTimeFormatter.ISO_LOCAL_DATE)
 
             val coursesToRemind = widgetRepository.getWidgetCoursesByDateRange(startDate, endDate).first()
-            Log.i(TAG, "获取到 ${coursesToRemind.size} 个未来 $WIDGET_SYNC_DAYS 天的课程。")
 
-            // 使用 SharedPreferences 方案，在设置新闹钟前先取消所有已记录的旧闹钟
-            Log.i(TAG, "正在清除所有旧的闹钟...")
+            // 重新设置前，先根据记录清理旧闹钟
             cancelAllAlarms()
 
-            Log.i(TAG, "正在设置新的闹钟...")
+            val zoneId = ZoneId.systemDefault()
+            val now = LocalDateTime.now()
+
             for (course in coursesToRemind) {
-                if (course.isSkipped) {
-                    Log.i(TAG, "课程 ${course.name} (${course.date}) 已被跳过，不设置提醒。")
-                    continue
-                }
+                if (course.isSkipped) continue
 
                 val courseDate = LocalDate.parse(course.date)
-                val courseTime = LocalTime.parse(course.startTime)
-                val courseDateTime = LocalDateTime.of(courseDate, courseTime)
-                val remindTime = courseDateTime.minusMinutes(remindBeforeMinutes.toLong())
+                val startDT = LocalDateTime.of(courseDate, LocalTime.parse(course.startTime))
+                val endDT = LocalDateTime.of(courseDate, LocalTime.parse(course.endTime))
 
-                if (remindTime.isAfter(LocalDateTime.now())) {
-                    setAlarm(course.id, remindTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), course.name, course.position)
-                    Log.i(TAG, "已为课程 ${course.name} (${course.date}) 设置提醒。地点: ${course.position}，提醒时间: $remindTime")
-                } else {
-                    Log.i(TAG, "课程 ${course.name} (${course.date}) 的提醒时间已过，不设置。")
+                // 1. 设置【提前提醒闹钟】
+                val remindTime = startDT.minusMinutes(remindBeforeMinutes.toLong())
+                if (remindTime.isAfter(now)) {
+                    setAlarmInternal(
+                        courseId = course.id,
+                        triggerTime = remindTime.atZone(zoneId).toInstant().toEpochMilli(),
+                        name = course.name,
+                        position = course.position,
+                        alarmType = AlarmType.REMIND
+                    )
+                }
+
+                // 2. 设置【上课进度条显示闹钟】
+                if (endDT.isAfter(now)) {
+                    val triggerTime = if (startDT.isBefore(now)) {
+                        System.currentTimeMillis() + 800 // 课已开始，补发
+                    } else {
+                        startDT.atZone(zoneId).toInstant().toEpochMilli()
+                    }
+
+                    setAlarmInternal(
+                        courseId = course.id,
+                        triggerTime = triggerTime,
+                        name = course.name,
+                        position = "",
+                        alarmType = AlarmType.PROGRESS_SHOW,
+                        startTime = startDT.atZone(zoneId).toInstant().toEpochMilli(),
+                        endTime = endDT.atZone(zoneId).toInstant().toEpochMilli()
+                    )
+
+                    // 3. 设置【课程结束自动关闭通知的闹钟】（关键新增点！）
+                    setAlarmInternal(
+                        courseId = course.id,
+                        triggerTime = endDT.atZone(zoneId).toInstant().toEpochMilli(),
+                        name = course.name,
+                        position = "",
+                        alarmType = AlarmType.PROGRESS_CANCEL
+                    )
                 }
             }
 
-            Log.i(TAG, "所有闹钟设置任务完成。")
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "闹钟设置任务失败！", e)
@@ -95,79 +127,122 @@ class CourseNotificationWorker(
     }
 
     /**
-     * 设置一个课程提醒闹钟。
-     * 只有在拥有精确闹钟权限时才会设置。
-     *
-     * 该方法会同时将闹钟ID记录到 SharedPreferences 中。
+     * 闹钟类型枚举，方便管理
      */
-    private fun setAlarm(courseId: String, triggerTime: Long, name: String, position: String) {
+    enum class AlarmType {
+        REMIND,          // 普通提醒
+        PROGRESS_SHOW,   // 进度条开始显示
+        PROGRESS_CANCEL  // 进度条结束取消
+    }
+
+    private fun setAlarmInternal(
+        courseId: String,
+        triggerTime: Long,
+        name: String,
+        position: String,
+        alarmType: AlarmType,
+        startTime: Long = 0L,
+        endTime: Long = 0L
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (!alarmManager.canScheduleExactAlarms()) {
-                Log.w(TAG, "没有精确闹钟权限，无法设置闹钟。")
-                return
-            }
+            if (!alarmManager.canScheduleExactAlarms()) return
         }
 
         val intent = Intent(applicationContext, CourseAlarmReceiver::class.java).apply {
-            putExtra(CourseAlarmReceiver.EXTRA_COURSE_ID, courseId)
-            putExtra(CourseAlarmReceiver.EXTRA_COURSE_NAME, name)
-            putExtra(CourseAlarmReceiver.EXTRA_COURSE_POSITION, position)
+            when (alarmType) {
+                AlarmType.PROGRESS_SHOW -> {
+                    putExtra(CourseAlarmReceiver.EXTRA_DND_ACTION, CourseAlarmReceiver.ACTION_LIVE_PROGRESS)
+                    putExtra(CourseAlarmReceiver.EXTRA_COURSE_NAME, name)
+                    putExtra("extra_start_time", startTime)
+                    putExtra("extra_end_time", endTime)
+                    data = Uri.parse("live_progress://$courseId")
+                }
+                AlarmType.PROGRESS_CANCEL -> {
+                    // 调用 Receiver 中的取消逻辑
+                    putExtra(CourseAlarmReceiver.EXTRA_DND_ACTION, CourseAlarmReceiver.ACTION_CANCEL_LIVE_PROGRESS)
+                    data = Uri.parse("cancel_progress://$courseId")
+                }
+                AlarmType.REMIND -> {
+                    putExtra(CourseAlarmReceiver.EXTRA_COURSE_ID, courseId)
+                    putExtra(CourseAlarmReceiver.EXTRA_COURSE_NAME, name)
+                    putExtra(CourseAlarmReceiver.EXTRA_COURSE_POSITION, position)
+                    data = Uri.parse("course_remind://$courseId")
+                }
+            }
+        }
+
+        // 不同的 RequestCode 确保同一课程的三个闹钟互不覆盖
+        val requestCode = when (alarmType) {
+            AlarmType.PROGRESS_SHOW -> abs(courseId.hashCode() + 1)
+            AlarmType.PROGRESS_CANCEL -> abs(courseId.hashCode() + 2)
+            AlarmType.REMIND -> abs(courseId.hashCode())
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
             applicationContext,
-            abs(courseId.hashCode()),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerTime,
-            pendingIntent
-        )
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
 
+        // 记录 ID 到 SharedPreferences 用于后续清理
         val sharedPreferences = applicationContext.getSharedPreferences(ALARM_IDS_PREFS, Context.MODE_PRIVATE)
         val currentIds = sharedPreferences.getStringSet(KEY_ACTIVE_ALARM_IDS, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-        currentIds.add(courseId)
-        sharedPreferences.edit {
-            putStringSet(KEY_ACTIVE_ALARM_IDS, currentIds)
+
+        val recordId = when (alarmType) {
+            AlarmType.PROGRESS_SHOW -> "$PREFIX_PROGRESS_SHOW$courseId"
+            AlarmType.PROGRESS_CANCEL -> "$PREFIX_PROGRESS_CANCEL$courseId"
+            AlarmType.REMIND -> courseId
         }
-        Log.d(TAG, "已将闹钟ID记录到 SharedPreferences: $courseId")
+        currentIds.add(recordId)
+
+        sharedPreferences.edit { putStringSet(KEY_ACTIVE_ALARM_IDS, currentIds) }
     }
 
-    /**
-     * 取消所有由本应用设置的闹钟。
-     * 该方法不再依赖课程查询，而是直接从 SharedPreferences 中读取并取消所有已记录的ID。
-     */
     private fun cancelAllAlarms() {
         val sharedPreferences = applicationContext.getSharedPreferences(ALARM_IDS_PREFS, Context.MODE_PRIVATE)
-        val activeAlarmIds = sharedPreferences.getStringSet(KEY_ACTIVE_ALARM_IDS, null)
+        val activeIds = sharedPreferences.getStringSet(KEY_ACTIVE_ALARM_IDS, null)
 
-        if (activeAlarmIds != null) {
-            for (courseId in activeAlarmIds) {
-                val intent = Intent(applicationContext, CourseAlarmReceiver::class.java).apply {
-                    putExtra(CourseAlarmReceiver.EXTRA_COURSE_ID, courseId)
-                }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    applicationContext,
-                    abs(courseId.hashCode()),
-                    intent,
-                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-                )
+        activeIds?.forEach { recordId ->
+            val isProgressShow = recordId.startsWith(PREFIX_PROGRESS_SHOW)
+            val isProgressCancel = recordId.startsWith(PREFIX_PROGRESS_CANCEL)
 
-                pendingIntent?.let {
-                    alarmManager.cancel(it)
-                    it.cancel()
-                    Log.d(TAG, "已取消闹钟：${courseId}")
+            val originalId = when {
+                isProgressShow -> recordId.removePrefix(PREFIX_PROGRESS_SHOW)
+                isProgressCancel -> recordId.removePrefix(PREFIX_PROGRESS_CANCEL)
+                else -> recordId
+            }
+
+            val intent = Intent(applicationContext, CourseAlarmReceiver::class.java).apply {
+                data = when {
+                    isProgressShow -> Uri.parse("live_progress://$originalId")
+                    isProgressCancel -> Uri.parse("cancel_progress://$originalId")
+                    else -> Uri.parse("course_remind://$originalId")
                 }
+            }
+
+            val requestCode = when {
+                isProgressShow -> abs(originalId.hashCode() + 1)
+                isProgressCancel -> abs(originalId.hashCode() + 2)
+                else -> abs(originalId.hashCode())
+            }
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                applicationContext,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            pendingIntent?.let {
+                alarmManager.cancel(it)
+                it.cancel()
             }
         }
 
-        // 关键一步：取消完所有闹钟后，将记录清空
-        sharedPreferences.edit {
-            remove(KEY_ACTIVE_ALARM_IDS)
-        }
-        Log.i(TAG, "所有记录的闹钟已取消，SharedPreferences记录已清空。")
+        sharedPreferences.edit { remove(KEY_ACTIVE_ALARM_IDS) }
+        Log.i(TAG, "所有本地记录的闹钟（提醒+显示+取消）已清理。")
     }
 }

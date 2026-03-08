@@ -106,6 +106,15 @@
     <string name="alarm_option_none">不提醒</string>
     <string name="alarm_option_on_time">准时提醒</string>
 
+    <string name="item_live_progress_setting">上课进度条提醒</string>
+    <string name="text_go_to_system_settings">去系统设置</string>
+    <string name="notification_channel_live_progress">实时课程进度</string>
+    <string name="notification_channel_desc_live_progress">显示当前正在进行的课程剩余时间</string>
+    <string name="notification_default_course_name">课程进行中</string>
+    <string name="notification_live_content_template">%1$d min下课</string>
+    <string name="notification_unknown_course">未知课程</string>
+    <string name="notification_unknown_position">地点未知</string>
+
     <!-- 小组件相关 -->
     <string name="widget_name_tiny">超小课程2x1</string>
     <string name="widget_name_compact">紧凑课程2x2</string>
@@ -383,7 +392,7 @@
     <string name="toast_url_empty_enter_first">URL为空，请先输入网址。</string>
     <string name="item_devtools_debug">DevTools 网页调试</string>
     <string name="a11y_devtools">DevTools</string>
-    <string name="toast_devtools_enabled_format">DevTools 网页调试已 %1$s。</string>
+    <string name="toast_devtools_enabled_format">DevTools 网页调试 %1$s。</string>
     <string name="text_import_guide">请登录教务系统后切换到有课表显示的页面再点击导入课程，点击右上角的更多查看其他选项</string>
     <string name="action_execute_import">执行导入</string>
     <string name="toast_no_script_manual_import">该适配器没有脚本，请手动导入。</string>

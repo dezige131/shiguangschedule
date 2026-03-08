@@ -106,6 +106,15 @@
     <string name="alarm_option_none">No reminder</string>
     <string name="alarm_option_on_time">On time</string>
 
+    <string name="item_live_progress_setting">Class Progress Bar Alert</string>
+    <string name="text_go_to_system_settings">Go to System Settings</string>
+    <string name="notification_channel_live_progress">Live Class Progress</string>
+    <string name="notification_channel_desc_live_progress">Shows the remaining time for the current class</string>
+    <string name="notification_default_course_name">Class in Progress</string>
+    <string name="notification_live_content_template">%1$d min until end</string>
+    <string name="notification_unknown_course">Unknown Course</string>
+    <string name="notification_unknown_position">Unknown Location</string>
+
     <!-- Widget Related -->
     <string name="widget_name_tiny">Tiny 2x1</string>
     <string name="widget_name_compact">Compact 2x2</string>

@@ -106,6 +106,15 @@
     <string name="alarm_option_none">不提醒</string>
     <string name="alarm_option_on_time">準時提醒</string>
 
+    <string name="item_live_progress_setting">上課進度條提醒</string>
+    <string name="text_go_to_system_settings">去系統設定</string>
+    <string name="notification_channel_live_progress">即時課程進度</string>
+    <string name="notification_channel_desc_live_progress">顯示當前正在進行的課程剩餘時間</string>
+    <string name="notification_default_course_name">課程進行中</string>
+    <string name="notification_live_content_template">%1$d 分鐘後下課</string>
+    <string name="notification_unknown_course">未知課程</string>
+    <string name="notification_unknown_position">地點未知</string>
+
     <!-- 小工具相關 -->
     <string name="widget_name_tiny">超小課程2x1</string>
     <string name="widget_name_compact">緊湊課程2x2</string>
@@ -383,7 +392,7 @@
     <string name="toast_url_empty_enter_first">URL為空，請先輸入網址。</string>
     <string name="item_devtools_debug">DevTools 網頁除錯</string>
     <string name="a11y_devtools">DevTools</string>
-    <string name="toast_devtools_enabled_format">DevTools 網頁除錯已 %1$s。</string>
+    <string name="toast_devtools_enabled_format">DevTools 網頁除錯 %1$s。</string>
     <string name="text_import_guide">請登入教務系統後切換到有課表顯示的頁面再點選匯入課程，點選右上角的更多檢視其他選項</string>
     <string name="action_execute_import">執行匯入</string>
     <string name="toast_no_script_manual_import">該適配器沒有指令碼，請手動匯入。</string>
