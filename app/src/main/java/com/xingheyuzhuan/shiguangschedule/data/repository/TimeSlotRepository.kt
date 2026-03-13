@@ -5,8 +5,11 @@ import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlotDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TimeSlotRepository(
+@Singleton
+class TimeSlotRepository @Inject constructor(
     private val timeSlotDao: TimeSlotDao
 ) {
     /**

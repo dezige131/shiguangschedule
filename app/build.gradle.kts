@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.gradle.license)
     alias(libs.plugins.protobuf)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -143,7 +144,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.jgit)
     implementation(libs.slf4j.api)
-    implementation(libs.slf4j.android)
     implementation(libs.androidx.compose.animation)
     implementation(libs.coil.compose)
     implementation(libs.protobuf.kotlin.lite)
@@ -151,6 +151,11 @@ dependencies {
     implementation(libs.javax.inject)
     implementation(libs.androidx.appcompat)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

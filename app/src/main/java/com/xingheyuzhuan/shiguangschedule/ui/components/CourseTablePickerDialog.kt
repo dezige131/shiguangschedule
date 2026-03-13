@@ -26,28 +26,37 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.xingheyuzhuan.shiguangschedule.R
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.xingheyuzhuan.shiguangschedule.MyApplication
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTable
+import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
+import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
+
+/**
+ * 专门为弹窗提供 Hilt 注入的仓库
+ */
+@HiltViewModel
+class CourseTablePickerDeps @Inject constructor(
+    val courseTableRepository: CourseTableRepository,
+    val appSettingsRepository: AppSettingsRepository
+) : ViewModel()
 
 @Composable
 fun CourseTablePickerDialog(
     title: String,
     onDismissRequest: () -> Unit,
     onTableSelected: (CourseTable) -> Unit,
+    deps: CourseTablePickerDeps = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val app = context.applicationContext as MyApplication
-    val courseTableRepository = app.courseTableRepository
-    val appSettingsRepository = app.appSettingsRepository
-
-    val courseTables by courseTableRepository.getAllCourseTables().collectAsState(initial = emptyList())
-    val appSettings by appSettingsRepository.getAppSettings().collectAsState(initial = null)
+    val courseTables by deps.courseTableRepository.getAllCourseTables().collectAsState(initial = emptyList())
+    val appSettings by deps.appSettingsRepository.getAppSettings().collectAsState(initial = null)
 
     var selectedTable by remember { mutableStateOf<CourseTable?>(null) }
 

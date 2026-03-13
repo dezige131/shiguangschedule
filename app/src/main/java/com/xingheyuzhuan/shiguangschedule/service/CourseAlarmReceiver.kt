@@ -14,15 +14,20 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import com.xingheyuzhuan.shiguangschedule.MainActivity
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 
+@AndroidEntryPoint
 class CourseAlarmReceiver : BroadcastReceiver() {
+
+    @Inject lateinit var appSettingsRepository: AppSettingsRepository
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "course_notification_channel"
@@ -70,14 +75,8 @@ class CourseAlarmReceiver : BroadcastReceiver() {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val app = ctx.applicationContext as? MyApplication
-                    val appSettingsRepository = app?.appSettingsRepository ?: run {
-                        Log.e(TAG, "无法获取 AppSettingsRepository")
-                        return@launch
-                    }
-
                     val appSettings = appSettingsRepository.getAppSettings().first()
-                    val modeToUse = appSettings.autoControlMode
+                    val modeToUse = appSettings.autoControlMode // 这里现在能找到了
                     val dndAction = intent?.getStringExtra(EXTRA_DND_ACTION)
 
                     if (!dndAction.isNullOrEmpty()) {

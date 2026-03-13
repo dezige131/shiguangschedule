@@ -2,7 +2,6 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings.notification
 
 import android.Manifest
 import android.app.AlarmManager
-import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -52,7 +51,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,10 +64,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -165,16 +164,12 @@ fun openIgnoreBatteryOptimizationSettings(context: Context) {
 @Composable
 fun NotificationSettingsScreen(
     onNavigateBack: () -> Unit,
+    viewModel: NotificationSettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // 使用 ViewModel 的静态工厂方法实例化 ViewModel
-    val viewModel: NotificationSettingsViewModel = viewModel(
-        factory = NotificationSettingsViewModel.provideFactory(context.applicationContext as Application)
-    )
-
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // --- 状态定义 ---
     var showEditRemindMinutesDialog by remember { mutableStateOf(false) }

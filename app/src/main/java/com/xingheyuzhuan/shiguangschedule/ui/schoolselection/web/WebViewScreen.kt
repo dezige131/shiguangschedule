@@ -67,12 +67,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.BuildConfig
 import com.xingheyuzhuan.shiguangschedule.R
-import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionRepository
-import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
 import com.xingheyuzhuan.shiguangschedule.ui.components.CourseTablePickerDialog
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import java.io.File
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,10 +79,12 @@ fun WebViewScreen(
     navController: NavController,
     initialUrl: String?,
     assetJsPath: String?,
-    courseConversionRepository: CourseConversionRepository,
-    timeSlotRepository: TimeSlotRepository,
     courseScheduleRoute: String,
+    viewModel: WebViewModel = hiltViewModel()
 ) {
+    val courseConversionRepository = viewModel.courseConversionRepository
+    val timeSlotRepository = viewModel.timeSlotRepository
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current

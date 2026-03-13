@@ -1,12 +1,10 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.coursemanagement
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
+import javax.inject.Inject
 
 /**
  * 用于 UI 展示的课程名称和实例数量的组合。
@@ -29,7 +28,8 @@ data class CourseNameCount(
  * 【一级页面】课程名称列表 ViewModel (Master View)
  * 负责提取当前课表下的唯一课程名称列表及其对应的实例数量。
  */
-class CourseNameListViewModel(
+@HiltViewModel
+class CourseNameListViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository
 ) : ViewModel() {
@@ -82,28 +82,6 @@ class CourseNameListViewModel(
 
         if (tableId != null) {
             courseTableRepository.deleteCoursesByNames(tableId, courseNames)
-        }
-    }
-
-
-    /**
-     * ViewModel 的工厂类，用于依赖注入。
-     */
-    companion object {
-        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as MyApplication
-
-                if (modelClass.isAssignableFrom(CourseNameListViewModel::class.java)) {
-                    // 依赖注入 AppSettingsRepository 和 CourseTableRepository
-                    return CourseNameListViewModel(
-                        application.appSettingsRepository,
-                        application.courseTableRepository
-                    ) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-            }
         }
     }
 }

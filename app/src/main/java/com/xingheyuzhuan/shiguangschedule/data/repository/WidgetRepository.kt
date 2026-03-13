@@ -15,14 +15,18 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Widget 数据仓库，负责处理与 Widget 数据库相关的所有数据操作。
  */
-class WidgetRepository(
+@Singleton
+class WidgetRepository @Inject constructor(
     private val widgetCourseDao: WidgetCourseDao,
     private val widgetAppSettingsDao: WidgetAppSettingsDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     // 使用线程安全的 java.time.DateTimeFormatter
     private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())

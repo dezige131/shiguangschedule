@@ -3,16 +3,13 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings.conversion
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseImportExport
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,12 +19,14 @@ import kotlinx.serialization.json.Json
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
+import javax.inject.Inject
 
 /**
  * 课表导入/导出界面的 ViewModel。
  * 处理所有业务逻辑和状态，并通过事件通道与 UI 沟通。
  */
-class CourseTableConversionViewModel(
+@HiltViewModel
+class CourseTableConversionViewModel @Inject constructor(
     application: Application,
     private val courseConversionRepository: CourseConversionRepository,
     private val courseTableRepository: CourseTableRepository,
@@ -167,21 +166,4 @@ sealed class ConversionEvent {
     data class LaunchExportFileCreator(val jsonContent: String) : ConversionEvent()
     data class LaunchExportIcsFileCreator(val tableId: String, val alarmMinutes: Int?) : ConversionEvent()
     data class ShowMessage(val message: String) : ConversionEvent()
-}
-
-object CourseTableConversionViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-        if (modelClass.isAssignableFrom(CourseTableConversionViewModel::class.java)) {
-            val app = application as MyApplication
-            @Suppress("UNCHECKED_CAST")
-            return CourseTableConversionViewModel(
-                application,
-                app.courseConversionRepository,
-                app.courseTableRepository,
-                app.appSettingsRepository
-            ) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
 }

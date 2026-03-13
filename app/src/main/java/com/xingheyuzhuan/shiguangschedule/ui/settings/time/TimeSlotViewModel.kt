@@ -2,30 +2,30 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings.time
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
+import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableConfig
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableConfig
+import javax.inject.Inject
 
 /**
  * ViewModel，用于管理时间段设置界面的 UI 状态和业务逻辑。
  * 它通过 Repository 与数据库进行交互，并为 UI 提供数据流。
  */
-class TimeSlotViewModel(
+@HiltViewModel
+class TimeSlotViewModel @Inject constructor(
     private val timeSlotRepository: TimeSlotRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository
@@ -132,23 +132,3 @@ data class TimeSlotUiState(
     val defaultClassDuration: Int,
     val defaultBreakDuration: Int
 )
-
-/**
- * ViewModel 的工厂类，用于依赖注入。
- */
-object TimeSlotViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-        val myApplication = application as MyApplication
-
-        val appSettingsRepository = myApplication.appSettingsRepository
-        val timeSlotRepository = myApplication.timeSlotRepository
-        val courseTableRepository = myApplication.courseTableRepository
-
-        if (modelClass.isAssignableFrom(TimeSlotViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return TimeSlotViewModel(timeSlotRepository, appSettingsRepository, courseTableRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}

@@ -1,17 +1,25 @@
 package com.xingheyuzhuan.shiguangschedule.ui.schedule
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedule.data.model.ScheduleGridStyle
-import com.xingheyuzhuan.shiguangschedule.data.repository.*
+import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
+import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import com.xingheyuzhuan.shiguangschedule.data.repository.StyleSettingsRepository
+import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -19,6 +27,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
+import javax.inject.Inject
 
 /**
  * 课表展示块：封装单次或冲突课程
@@ -48,9 +57,9 @@ data class WeeklyScheduleUiState(
     val currentWeekNumber: Int? = null,
     val pagerMondayDate: LocalDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 )
-
+@HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
-class WeeklyScheduleViewModel(
+class WeeklyScheduleViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository,
     private val timeSlotRepository: TimeSlotRepository,
@@ -274,15 +283,3 @@ private data class ScheduleConfigPackage(
     val style: ScheduleGridStyle,
     val mondayDate: LocalDate
 )
-
-object WeeklyScheduleViewModelFactory : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val app = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as MyApplication
-        return WeeklyScheduleViewModel(
-            app.appSettingsRepository,
-            app.courseTableRepository,
-            app.timeSlotRepository,
-            app.styleSettingsRepository) as T
-    }
-}

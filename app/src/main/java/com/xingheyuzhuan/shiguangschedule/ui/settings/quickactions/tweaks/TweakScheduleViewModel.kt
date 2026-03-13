@@ -2,15 +2,13 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTable
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +18,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
+import javax.inject.Inject
 
 /**
  * 调课页面 UI 状态。
@@ -45,7 +44,8 @@ data class TweakScheduleUiState(
 /**
  * 课程调动页面的 ViewModel。
  */
-class TweakScheduleViewModel(
+@HiltViewModel
+class TweakScheduleViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository,
     private val application: Application
@@ -205,24 +205,5 @@ class TweakScheduleViewModel(
 
     fun resetMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
-    }
-}
-
-/**
- * 工厂类
- */
-object TweakScheduleViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-        if (modelClass.isAssignableFrom(TweakScheduleViewModel::class.java)) {
-            val myApplication = application as MyApplication
-            @Suppress("UNCHECKED_CAST")
-            return TweakScheduleViewModel(
-                appSettingsRepository = myApplication.appSettingsRepository,
-                courseTableRepository = myApplication.courseTableRepository,
-                application = application
-            ) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

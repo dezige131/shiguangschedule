@@ -1,6 +1,5 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.coursetables
 
-import android.app.Application
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -44,7 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTable
@@ -56,9 +55,7 @@ import java.util.Locale
 @Composable
 fun ManageCourseTablesScreen(
     navController: NavHostController,
-    viewModel: ManageCourseTablesViewModel = viewModel(
-        factory = ManageCourseTablesViewModel.provideFactory(LocalContext.current.applicationContext as Application)
-    )
+    viewModel: ManageCourseTablesViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 

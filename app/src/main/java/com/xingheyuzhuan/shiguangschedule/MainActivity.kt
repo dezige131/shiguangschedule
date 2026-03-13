@@ -10,7 +10,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,13 +32,15 @@ import com.xingheyuzhuan.shiguangschedule.ui.settings.coursetables.ManageCourseT
 import com.xingheyuzhuan.shiguangschedule.ui.settings.notification.NotificationSettingsScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.QuickActionsScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.delete.QuickDeleteScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks.TweakScheduleScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.style.StyleSettingsScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.time.TimeSlotManagementScreen
-import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks.TweakScheduleScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.update.UpdateRepoScreen
 import com.xingheyuzhuan.shiguangschedule.ui.theme.ShiguangScheduleTheme
 import com.xingheyuzhuan.shiguangschedule.ui.today.TodayScheduleScreen
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -161,18 +162,10 @@ fun AppNavigation() {
             val initialUrl = backStackEntry.arguments?.getString("initialUrl")
             val assetJsPath = backStackEntry.arguments?.getString("assetJsPath")
 
-            val context = LocalContext.current
-            val app = context.applicationContext as MyApplication
-
-            val courseConversionRepository = app.courseConversionRepository
-            val timeSlotRepository = app.timeSlotRepository
-
             WebViewScreen(
                 navController = navController,
                 initialUrl = initialUrl,
                 assetJsPath = assetJsPath,
-                courseConversionRepository = courseConversionRepository,
-                timeSlotRepository = timeSlotRepository,
                 courseScheduleRoute = Screen.CourseSchedule.route,
             )
         }
@@ -197,14 +190,8 @@ fun AppNavigation() {
             exitTransition = { ExitTransition.None },
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { ExitTransition.None }
-        ) { backStackEntry ->
-            val courseId = backStackEntry.arguments?.getString("courseId")
-
-            // 路由参数只处理 courseId (Add/Edit 模式)。
-            AddEditCourseScreen(
-                courseId = courseId,
-                onNavigateBack = { navController.popBackStack() },
-            )
+        ) {
+            AddEditCourseScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(
             Screen.CourseTableConversion.route,

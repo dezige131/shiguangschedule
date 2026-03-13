@@ -1,32 +1,37 @@
 package com.xingheyuzhuan.shiguangschedule.ui.today
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.R
-import com.xingheyuzhuan.shiguangschedule.data.db.widget.WidgetCourse
 import com.xingheyuzhuan.shiguangschedule.data.db.widget.WidgetAppSettings
+import com.xingheyuzhuan.shiguangschedule.data.db.widget.WidgetCourse
 import com.xingheyuzhuan.shiguangschedule.data.model.ScheduleGridStyle
 import com.xingheyuzhuan.shiguangschedule.data.repository.StyleSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.WidgetRepository
-import kotlinx.coroutines.flow.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import javax.inject.Inject
 
-class TodayScheduleViewModel(
-    application: Application,
+@HiltViewModel
+class TodayScheduleViewModel @Inject constructor(
+    private val application: Application,
     private val widgetRepository: WidgetRepository,
     private val styleSettingsRepository: StyleSettingsRepository
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val widgetSettingsFlow: Flow<WidgetAppSettings?> = widgetRepository.getAppSettingsFlow()
 
-    // 暴露样式配置流给 UI
     val gridStyle: StateFlow<ScheduleGridStyle> = styleSettingsRepository.styleFlow
         .stateIn(
             scope = viewModelScope,
@@ -34,9 +39,8 @@ class TodayScheduleViewModel(
             initialValue = ScheduleGridStyle.DEFAULT
         )
 
-    // 辅助函数
     private fun getString(resId: Int, vararg formatArgs: Any): String {
-        return getApplication<Application>().getString(resId, *formatArgs)
+        return application.getString(resId, *formatArgs)
     }
 
     val semesterStatus: StateFlow<String> = widgetSettingsFlow.map { widgetSettings ->
@@ -88,22 +92,6 @@ class TodayScheduleViewModel(
             widgetRepository.getWidgetCoursesByDateRange(todayString, todayString).collect { courses ->
                 _todayCourses.value = courses
             }
-        }
-    }
-
-    // 更新 Factory 以支持注入 StyleSettingsRepository
-    class TodayScheduleViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(TodayScheduleViewModel::class.java)) {
-                val myApp = application as MyApplication
-                return TodayScheduleViewModel(
-                    myApp,
-                    myApp.widgetRepository,
-                    myApp.styleSettingsRepository
-                ) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

@@ -19,6 +19,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import androidx.core.content.edit
+import androidx.hilt.work.HiltWorker
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+
 
 /**
  * 修改说明：
@@ -26,9 +30,11 @@ import androidx.core.content.edit
  * 2. 优化了 setAlarmInternal，支持三种类型的闹钟：普通提醒、进度显示、进度取消。
  * 3. 确保了 cancelAllAlarms 能够完整清理这三种闹钟。
  */
-class CourseNotificationWorker(
-    appContext: Context,
-    workerParams: WorkerParameters,
+
+@HiltWorker
+class CourseNotificationWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
     private val appSettingsRepository: AppSettingsRepository,
     private val widgetRepository: WidgetRepository
 ) : CoroutineWorker(appContext, workerParams) {

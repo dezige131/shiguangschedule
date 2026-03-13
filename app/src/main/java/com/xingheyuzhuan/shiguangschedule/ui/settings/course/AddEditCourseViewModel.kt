@@ -1,43 +1,46 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.course
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
 import com.xingheyuzhuan.shiguangschedule.data.db.main.Course
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
+import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
-import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.StyleSettingsRepository
-import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
-import com.xingheyuzhuan.shiguangschedule.MyApplication
+import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
+import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
+import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
-import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
-import kotlinx.coroutines.flow.collect
+import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AddEditCourseViewModel(
+@HiltViewModel
+class AddEditCourseViewModel @Inject constructor(
     private val courseTableRepository: CourseTableRepository,
     private val timeSlotRepository: TimeSlotRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val styleSettingsRepository: StyleSettingsRepository,
-    private val courseId: String?,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val rawCourseId: String? = savedStateHandle["courseId"]
+    private val courseId: String? = if (rawCourseId == "new_course") null else rawCourseId
 
     private val _uiState = MutableStateFlow(AddEditCourseUiState())
     val uiState: StateFlow<AddEditCourseUiState> = _uiState.asStateFlow()
@@ -222,26 +225,6 @@ class AddEditCourseViewModel(
         viewModelScope.launch {
             _uiEvent.send(UiEvent.Cancel)
         }
-    }
-
-    companion object {
-        fun Factory(courseId: String?): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                    if (modelClass.isAssignableFrom(AddEditCourseViewModel::class.java)) {
-                        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as MyApplication
-                        return AddEditCourseViewModel(
-                            courseTableRepository = application.courseTableRepository,
-                            timeSlotRepository = application.timeSlotRepository,
-                            appSettingsRepository = application.appSettingsRepository,
-                            styleSettingsRepository = application.styleSettingsRepository,
-                            courseId = courseId,
-                        ) as T
-                    }
-                    throw IllegalArgumentException("Unknown ViewModel class")
-                }
-            }
     }
 }
 

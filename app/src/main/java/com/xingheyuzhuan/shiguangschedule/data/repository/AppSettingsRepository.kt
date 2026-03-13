@@ -13,11 +13,14 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 应用设置数据仓库，负责处理与应用设置相关的业务逻辑。
  */
-class AppSettingsRepository(
+@Singleton
+class AppSettingsRepository @Inject constructor(
     private val appSettingsDao: AppSettingsDao,
     private val courseTableConfigDao: CourseTableConfigDao
 ) {

@@ -53,7 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedule.ui.components.NativeNumberPicker
@@ -72,7 +72,7 @@ import java.time.format.DateTimeParseException
 @Composable
 fun TimeSlotManagementScreen(
     onBackClick: () -> Unit,
-    timeSlotViewModel: TimeSlotViewModel = viewModel(factory = TimeSlotViewModelFactory)
+    timeSlotViewModel: TimeSlotViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()

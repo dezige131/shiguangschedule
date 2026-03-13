@@ -5,10 +5,7 @@ import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.data.db.main.Course
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
@@ -19,6 +16,7 @@ import com.xingheyuzhuan.shiguangschedule.ui.schedule.MergedCourseBlock
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.WeeklyScheduleUiState
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed.Companion.toComposedStyle
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,8 +29,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+import javax.inject.Inject
 
-class StyleSettingsViewModel(
+@HiltViewModel
+class StyleSettingsViewModel @Inject constructor(
     private val styleRepository: StyleSettingsRepository,
     private val appSettingsRepository: AppSettingsRepository
 ) : ViewModel() {
@@ -330,15 +330,4 @@ class StyleSettingsViewModel(
         TimeSlot(7, "16:00", "16:45", "demo"),
         TimeSlot(8, "16:55", "17:40", "demo")
     )
-}
-
-object StyleSettingsViewModelFactory : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]) as MyApplication
-        return StyleSettingsViewModel(
-            styleRepository = application.styleSettingsRepository,
-            appSettingsRepository = application.appSettingsRepository
-        ) as T
-    }
 }

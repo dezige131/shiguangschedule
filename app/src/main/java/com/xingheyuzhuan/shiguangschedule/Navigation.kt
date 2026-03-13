@@ -36,13 +36,11 @@ sealed class Screen(val route: String) {
     object NotificationSettings : Screen("notification_settings")
 
     object AddEditCourse : Screen("add_edit_course_route/{courseId}") {
-        // 用于编辑现有课程，将 courseId 传递给路由
         fun createRouteWithCourseId(courseId: String): String {
             return "add_edit_course_route/$courseId"
         }
-        // 路由只需要导航到页面本身，并传递 null 占位符。
         fun createRouteForNewCourse(): String {
-            return "add_edit_course_route/null"
+            return "add_edit_course_route/new_course"
         }
     }
 

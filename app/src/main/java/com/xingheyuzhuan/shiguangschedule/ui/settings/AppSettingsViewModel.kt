@@ -1,13 +1,11 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.data.db.main.AppSettings
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableConfig
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,9 +17,10 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
@@ -145,22 +144,5 @@ class SettingsViewModel(
             // 修改了周起始日，需要重新计算当前周数
             updateCurrentWeek()
         }
-    }
-}
-/**
- * ViewModel 的工厂类，用于依赖注入。
- * 在此文件中定义，以提高代码内聚性。
- */
-object SettingsViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-        val application = checkNotNull(extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
-
-        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-            val appSettingsRepository = (application as MyApplication).appSettingsRepository
-
-            @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(appSettingsRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

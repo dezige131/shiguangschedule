@@ -2,21 +2,20 @@
 
 package com.xingheyuzhuan.shiguangschedule.ui.settings.notification
 
-import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.data.ApiDateImporter
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.service.CourseAlarmReceiver
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 /**
  * 通知设置界面的UI状态数据类
@@ -35,7 +34,8 @@ data class NotificationSettingsUiState(
 /**
  * 通知设置ViewModel，管理通知相关的业务逻辑
  */
-class NotificationSettingsViewModel(
+@HiltViewModel
+class NotificationSettingsViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository
 ) : ViewModel() {
 
@@ -138,31 +138,14 @@ class NotificationSettingsViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                withContext(viewModelScope.coroutineContext) {
-                    val currentSettings = appSettingsRepository.getAppSettings().first()
-                    appSettingsRepository.insertOrUpdateAppSettings(currentSettings.copy(skippedDates = emptySet()))
-                }
+                val currentSettings = appSettingsRepository.getAppSettings().first()
+                appSettingsRepository.insertOrUpdateAppSettings(currentSettings.copy(skippedDates = emptySet()))
                 _uiState.value = _uiState.value.copy(skippedDates = emptySet())
                 onSuccess(context)
             } catch (e: Exception) {
                 onFailure(context, e.message ?: "未知错误")
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
-            }
-        }
-    }
-
-    companion object {
-        // 提供ViewModel工厂方法
-        fun provideFactory(application: Application): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    if (modelClass.isAssignableFrom(NotificationSettingsViewModel::class.java)) {
-                        return NotificationSettingsViewModel((application as MyApplication).appSettingsRepository) as T
-                    }
-                    throw IllegalArgumentException("Unknown ViewModel class")
-                }
             }
         }
     }

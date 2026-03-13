@@ -49,7 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.Screen
@@ -66,7 +66,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CourseNameListScreen(
     navController: NavController,
-    viewModel: CourseNameListViewModel = viewModel(factory = CourseNameListViewModel.Factory)
+    viewModel: CourseNameListViewModel = hiltViewModel()
 ) {
     val uniqueCourseNames by viewModel.uniqueCourseNames.collectAsState()
     val coroutineScope = rememberCoroutineScope()

@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.InputStream
 import java.io.OutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 // 1. DataStore 文件名常量
 const val SCHEDULE_STYLE_DATASTORE_FILE_NAME = "schedule_style_settings.pb"
@@ -50,9 +53,10 @@ val Context.scheduleGridStyleDataStore: DataStore<ScheduleGridStyleProto> by dat
 /**
  * 样式设置的数据仓库，负责与 Proto DataStore 进行交互。
  */
-class StyleSettingsRepository(
+@Singleton
+class StyleSettingsRepository @Inject constructor(
     private val dataStore: DataStore<ScheduleGridStyleProto>,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     /**

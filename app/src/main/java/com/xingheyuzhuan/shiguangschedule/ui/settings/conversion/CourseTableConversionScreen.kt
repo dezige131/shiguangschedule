@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.FileProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.Screen
@@ -226,7 +226,7 @@ fun IcsExportDialog(
 @Composable
 fun CourseTableConversionScreen(
     navController: NavHostController,
-    viewModel: CourseTableConversionViewModel = viewModel(factory = CourseTableConversionViewModelFactory)
+    viewModel: CourseTableConversionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

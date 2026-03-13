@@ -40,8 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.Screen
@@ -63,9 +63,8 @@ import kotlinx.coroutines.launch
 fun CourseInstanceListScreen(
     courseName: String,
     onNavigateBack: () -> Unit,
-    // 接收 NavController，用于在 Composable 内部处理导航
     navController: NavController,
-    viewModel: CourseInstanceListViewModel = viewModel(factory = CourseInstanceListViewModel.Factory)
+    viewModel: CourseInstanceListViewModel = hiltViewModel()
 ) {
     // 使用 collectAsStateWithLifecycle 观察 UI 状态（包含颜色列表）
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

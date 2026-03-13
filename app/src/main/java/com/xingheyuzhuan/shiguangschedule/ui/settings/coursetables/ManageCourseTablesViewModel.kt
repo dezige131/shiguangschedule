@@ -1,24 +1,24 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.coursetables
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.xingheyuzhuan.shiguangschedule.MyApplication
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTable
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * 负责管理课表管理界面的所有状态和业务逻辑。
  */
-class ManageCourseTablesViewModel(
+@HiltViewModel
+class ManageCourseTablesViewModel @Inject constructor(
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository
 ) : ViewModel() {
@@ -85,26 +85,6 @@ class ManageCourseTablesViewModel(
                         switchCourseTable(remainingTables.first().id)
                     }
                 }
-            }
-        }
-    }
-
-    /**
-     * 伴生对象，用于创建 ViewModel 实例。
-     */
-    companion object {
-        fun provideFactory(
-            application: Application
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(ManageCourseTablesViewModel::class.java)) {
-                    // 从 MyApplication 中获取仓库实例
-                    val appSettingsRepository = (application as MyApplication).appSettingsRepository
-                    val courseTableRepository = application.courseTableRepository
-                    return ManageCourseTablesViewModel(appSettingsRepository, courseTableRepository) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
     }

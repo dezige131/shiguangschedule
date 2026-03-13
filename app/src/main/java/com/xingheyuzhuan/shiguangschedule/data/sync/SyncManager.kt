@@ -21,13 +21,16 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlin.time.Duration.Companion.milliseconds
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 /**
  * 中心化的同步管理器，负责在数据库数据初始化后启动同步任务。
  */
-class SyncManager(
-    // 仓库实例作为依赖项通过构造函数传入
-    private val appContext: Context,
+@Singleton
+class SyncManager @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val appSettingsRepository: AppSettingsRepository,
     private val courseTableRepository: CourseTableRepository,
     private val timeSlotRepository: TimeSlotRepository,

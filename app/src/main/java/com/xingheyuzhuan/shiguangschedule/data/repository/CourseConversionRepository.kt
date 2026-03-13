@@ -19,8 +19,14 @@ import com.xingheyuzhuan.shiguangschedule.tool.IcsExportTool
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CourseConversionRepository(
+/**
+ * 课表转换仓库，负责处理课程数据的导入、导出以及 ICS 生成等逻辑。
+ */
+@Singleton
+class CourseConversionRepository @Inject constructor(
     private val courseDao: CourseDao,
     private val courseWeekDao: CourseWeekDao,
     private val timeSlotDao: TimeSlotDao,

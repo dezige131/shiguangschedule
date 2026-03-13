@@ -25,6 +25,9 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.hilt.work.HiltWorker
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 
 /**
  * WorkManager 用于调度上课时行为模式（勿扰/静音）开启/关闭闹钟的 Worker。
@@ -34,9 +37,10 @@ import java.util.Locale
  * 3. 取消所有旧的模式闹钟。
  * 4. 计算未来 N 天内最近的模式开启和关闭时间点，并设置精确闹钟。
  */
-class DndSchedulerWorker(
-    appContext: Context,
-    workerParams: WorkerParameters,
+@HiltWorker
+class DndSchedulerWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
     private val appSettingsRepository: AppSettingsRepository,
     private val widgetRepository: WidgetRepository
 ) : CoroutineWorker(appContext, workerParams) {
