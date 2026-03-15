@@ -114,7 +114,16 @@ class AppSettingsRepository @Inject constructor(
      * 更新或插入特定课表的物理配置。
      */
     suspend fun insertOrUpdateCourseConfig(newConfig: CourseTableConfig) {
-        courseTableConfigDao.insertOrUpdate(newConfig)
+        val constrainedConfig = when {
+            newConfig.firstDayOfWeek == DayOfWeek.SUNDAY.value -> {
+                newConfig.copy(showWeekends = true)
+            }
+            !newConfig.showWeekends -> {
+                newConfig.copy(firstDayOfWeek = DayOfWeek.MONDAY.value)
+            }
+            else -> newConfig
+        }
+        courseTableConfigDao.insertOrUpdate(constrainedConfig)
     }
 
     // 业务算法 (时间、周次计算)

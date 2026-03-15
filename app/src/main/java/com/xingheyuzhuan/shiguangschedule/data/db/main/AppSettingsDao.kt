@@ -20,9 +20,6 @@ interface AppSettingsDao {
     @Query("SELECT * FROM app_settings WHERE id = 1")
     fun getAppSettings(): Flow<AppSettings?>
 
-    /**
-     * 标记为 ERROR 可以强制让你在搬家期间不再写出错误代码
-     */
     @Deprecated(
         message = "禁止再向 Room 写入设置数据，请使用 AppSettingsRepository。",
         level = DeprecationLevel.ERROR
