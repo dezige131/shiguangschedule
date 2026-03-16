@@ -476,6 +476,7 @@
     <string name="action_reset_style">Reset to default style</string>
     <string name="dialog_reset_title">Reset Style</string>
     <string name="dialog_reset_message">Are you sure you want to reset all style settings to default? This action cannot be undone.</string>
+    <string name="action_confirm_crop">Confirm Crop</string>
 
     <!-- Quick Actions -->
     <string name="item_quick_actions">Quick Actions</string>

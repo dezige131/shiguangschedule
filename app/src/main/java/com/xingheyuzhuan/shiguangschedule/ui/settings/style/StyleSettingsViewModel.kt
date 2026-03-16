@@ -1,7 +1,7 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.style
 
 import android.content.Context
-import android.net.Uri
+import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
 
@@ -81,7 +82,7 @@ class StyleSettingsViewModel @Inject constructor(
      * 2. 生成一个全新的随机文件名 (UUID)。
      * 3. 将新图拷贝到私有目录并更新数据库。
      */
-    fun updateWallpaper(context: Context, uri: Uri) = viewModelScope.launch(Dispatchers.IO) {
+    fun saveCroppedWallpaper(context: Context, bitmap: Bitmap) = viewModelScope.launch(Dispatchers.IO) {
         try {
             val currentStyle = styleRepository.getStyleOnce()
             val currentPath = currentStyle.backgroundImagePath ?: ""
@@ -96,10 +97,9 @@ class StyleSettingsViewModel @Inject constructor(
             val newFileName = "wallpaper_${UUID.randomUUID()}.jpg"
             val newFile = File(context.filesDir, newFileName)
 
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                newFile.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
+            FileOutputStream(newFile).use { out ->
+                // 使用 100 质量不压缩画质
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
             }
 
             styleRepository.setBackgroundImagePath(newFile.absolutePath)

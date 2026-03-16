@@ -476,6 +476,7 @@
     <string name="action_reset_style">恢复默认样式设置</string>
     <string name="dialog_reset_title">重置样式</string>
     <string name="dialog_reset_message">确定要将所有样式设置恢复为默认值吗？此操作不可撤销。</string>
+    <string name="action_confirm_crop">确定裁剪</string>
 
     <!-- 快捷操作 -->
     <string name="item_quick_actions">快捷操作</string>

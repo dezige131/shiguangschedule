@@ -1,6 +1,7 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.style
 
 import android.content.res.Configuration
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,6 +83,7 @@ import coil.compose.AsyncImage
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.ui.components.AdvancedColorPicker
 import com.xingheyuzhuan.shiguangschedule.ui.components.ColorPickerConfig
+import com.xingheyuzhuan.shiguangschedule.ui.components.ImageCropper
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.WeeklyScheduleUiState
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGrid
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed
@@ -104,6 +106,33 @@ fun StyleSettingsScreen(
     var selectedColorIndex by remember { mutableIntStateOf(0) }
 
     val sheetState = rememberModalBottomSheetState()
+
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var showCropper by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let {
+            selectedUri = it
+            showCropper = true
+        }
+    }
+    if (showCropper && selectedUri != null) {
+        val screenAspectRatio = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp.toFloat()
+        ImageCropper(
+            uri = selectedUri!!,
+            aspectRatio = screenAspectRatio,
+            onCropConfirmed = { bitmap ->
+                viewModel.saveCroppedWallpaper(context, bitmap)
+                showCropper = false
+                selectedUri = null
+            },
+            onDismiss = {
+                showCropper = false
+                selectedUri = null
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -135,7 +164,9 @@ fun StyleSettingsScreen(
                 Row(modifier = contentModifier) {
                     previewContent(Modifier.fillMaxHeight().weight(0.4f))
                     Card(modifier = Modifier.fillMaxHeight().weight(0.6f), shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)) {
-                        SettingsListContent(currentStyle, viewModel) { cat, isDark, idx ->
+                        SettingsListContent(currentStyle, viewModel, onWallpaperClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }) { cat, isDark, idx ->
                             pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx
                             showColorPicker = true
                         }
@@ -145,7 +176,9 @@ fun StyleSettingsScreen(
                 Column(modifier = contentModifier) {
                     previewContent(Modifier.fillMaxWidth().weight(0.45f))
                     Card(modifier = Modifier.fillMaxWidth().weight(0.55f), shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)) {
-                        SettingsListContent(currentStyle, viewModel) { cat, isDark, idx ->
+                        SettingsListContent(currentStyle, viewModel, onWallpaperClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }) { cat, isDark, idx ->
                             pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx
                             showColorPicker = true
                         }
@@ -190,13 +223,11 @@ fun StyleSettingsScreen(
 private fun SettingsListContent(
     currentStyle: ScheduleGridStyleComposed,
     viewModel: StyleSettingsViewModel,
+    onWallpaperClick: () -> Unit,
     onPick: (category: Int, isDark: Boolean, index: Int) -> Unit
 ) {
     var showResetDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let { viewModel.updateWallpaper(context, it) }
-    }
 
     if (showResetDialog) {
         AlertDialog(
@@ -233,7 +264,7 @@ private fun SettingsListContent(
         Text(stringResource(R.string.style_category_interface), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         WallpaperItem(
             path = currentStyle.backgroundImagePath,
-            onClick = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onClick = onWallpaperClick,
             onLongClick = { viewModel.removeWallpaper(context) }
         )
         StyleSwitchItem(stringResource(R.string.label_hide_section_time), currentStyle.hideSectionTime) { viewModel.updateHideSectionTime(it) }
