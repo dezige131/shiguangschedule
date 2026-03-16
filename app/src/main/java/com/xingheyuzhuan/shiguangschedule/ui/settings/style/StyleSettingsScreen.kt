@@ -1,24 +1,18 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.style
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
@@ -40,7 +33,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,9 +57,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,16 +65,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -93,10 +76,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.toSize
-import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -104,14 +83,10 @@ import coil.compose.AsyncImage
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.ui.components.AdvancedColorPicker
 import com.xingheyuzhuan.shiguangschedule.ui.components.ColorPickerConfig
+import com.xingheyuzhuan.shiguangschedule.ui.components.ImageCropper
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.WeeklyScheduleUiState
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGrid
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,10 +117,11 @@ fun StyleSettingsScreen(
             showCropper = true
         }
     }
-
     if (showCropper && selectedUri != null) {
-        WallpaperCropper(
+        val screenAspectRatio = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp.toFloat()
+        ImageCropper(
             uri = selectedUri!!,
+            aspectRatio = screenAspectRatio,
             onCropConfirmed = { bitmap ->
                 viewModel.saveCroppedWallpaper(context, bitmap)
                 showCropper = false
@@ -188,12 +164,11 @@ fun StyleSettingsScreen(
                 Row(modifier = contentModifier) {
                     previewContent(Modifier.fillMaxHeight().weight(0.4f))
                     Card(modifier = Modifier.fillMaxHeight().weight(0.6f), shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)) {
-                        SettingsListContent(
-                            currentStyle = currentStyle,
-                            viewModel = viewModel,
-                            onWallpaperClick = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) } // 👈 增加这个
-                        ) { cat, isDark, idx ->
-                            pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx; showColorPicker = true
+                        SettingsListContent(currentStyle, viewModel, onWallpaperClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }) { cat, isDark, idx ->
+                            pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx
+                            showColorPicker = true
                         }
                     }
                 }
@@ -201,12 +176,11 @@ fun StyleSettingsScreen(
                 Column(modifier = contentModifier) {
                     previewContent(Modifier.fillMaxWidth().weight(0.45f))
                     Card(modifier = Modifier.fillMaxWidth().weight(0.55f), shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)) {
-                        SettingsListContent(
-                            currentStyle = currentStyle,
-                            viewModel = viewModel,
-                            onWallpaperClick = { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) } // 👈 增加这个
-                        ) { cat, isDark, idx ->
-                            pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx; showColorPicker = true
+                        SettingsListContent(currentStyle, viewModel, onWallpaperClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }) { cat, isDark, idx ->
+                            pickingCategory = cat; isDarkTarget = isDark; selectedColorIndex = idx
+                            showColorPicker = true
                         }
                     }
                 }
@@ -340,184 +314,6 @@ private fun SettingsListContent(
             onEditColor = { onPick(0, true, it) },
             onEditConflict = { onPick(1, true, 0) }
         )
-    }
-}
-
-@Composable
-private fun WallpaperCropper(
-    uri: Uri,
-    onCropConfirmed: (Bitmap) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var containerSize by remember { mutableStateOf(Size.Zero) }
-
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val windowSize = windowInfo.containerSize
-    val screenAspectRatio = windowSize.width.toFloat() / windowSize.height.toFloat()
-
-    LaunchedEffect(uri) {
-        withContext(Dispatchers.IO) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use {
-                    bitmap = BitmapFactory.decodeStream(it)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    BackHandler { onDismiss() }
-
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black).zIndex(10f),
-        contentAlignment = Alignment.Center
-    ) {
-        if (bitmap != null) {
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offset by remember { mutableStateOf(Offset.Zero) }
-
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxSize().onGloballyPositioned { containerSize = it.size.toSize() }
-            ) {
-                val cw = constraints.maxWidth.toFloat()
-                val ch = constraints.maxHeight.toFloat()
-
-                // 优化裁剪框大小计算：缩小宽度占比，并居中显示，避开状态栏
-                val buttonAreaHeight = with(density) { 120.dp.toPx() }
-                val topPadding = with(density) { 60.dp.toPx() } // 增加顶部预留空间，避开状态栏
-                val availableHeight = ch - buttonAreaHeight - topPadding
-
-                // 裁剪框宽度设为屏幕宽度的 75%，更精致
-                val cropWidthCandidate = cw * 0.75f
-                val cropHeightCandidate = cropWidthCandidate / screenAspectRatio
-
-                val (cropWidth, cropHeight) = if (cropHeightCandidate > availableHeight) {
-                    val h = availableHeight * 0.85f
-                    Pair(h * screenAspectRatio, h)
-                } else {
-                    Pair(cropWidthCandidate, cropHeightCandidate)
-                }
-
-                // 裁剪框居中在 availableHeight 区域内，且整体向下偏移 topPadding
-                val cropRect = Rect(
-                    left = (cw - cropWidth) / 2,
-                    top = topPadding + (availableHeight - cropHeight) / 2,
-                    right = (cw + cropWidth) / 2,
-                    bottom = topPadding + (availableHeight + cropHeight) / 2
-                )
-
-                // 初始缩放确保填满裁剪框
-                LaunchedEffect(bitmap, containerSize) {
-                    if (bitmap != null && containerSize != Size.Zero) {
-                        val imgW = bitmap!!.width.toFloat()
-                        val imgH = bitmap!!.height.toFloat()
-                        val scaleW = cropWidth / imgW
-                        val scaleH = cropHeight / imgH
-                        // 使用 max 确保图片至少有一边填满，另一边超出，从而完全覆盖裁剪框
-                        scale = max(scaleW, scaleH)
-
-                        // 初始位置使图片在裁剪框内居中
-                        val initialImgW = imgW * scale
-                        val initialImgH = imgH * scale
-                        val centerX = cropRect.left + cropWidth / 2
-                        val centerY = cropRect.top + cropHeight / 2
-
-                        offset = Offset(centerX - cw / 2, centerY - ch / 2)
-                    }
-                }
-
-                fun constrainOffset(newOffset: Offset, newScale: Float): Offset {
-                    val imgW = bitmap!!.width * newScale
-                    val imgH = bitmap!!.height * newScale
-
-                    // 计算允许的偏移范围。由于浮点数精度问题，使用 min/max 确保 range 不会为空
-                    val minX = cropRect.right - (cw + imgW) / 2
-                    val maxX = cropRect.left - (cw - imgW) / 2
-                    val minY = cropRect.bottom - (ch + imgH) / 2
-                    val maxY = cropRect.top - (ch - imgH) / 2
-
-                    return Offset(
-                        newOffset.x.coerceIn(min(minX, maxX), max(minX, maxX)),
-                        newOffset.y.coerceIn(min(minY, maxY), max(minY, maxY))
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            val minScale = max(cropWidth / bitmap!!.width, cropHeight / bitmap!!.height)
-                            val newScale = (scale * zoom).coerceAtLeast(minScale)
-                            scale = newScale
-                            offset = constrainOffset(offset + pan, newScale)
-                        }
-                    }
-                ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val imgW = bitmap!!.width * scale
-                        val imgH = bitmap!!.height * scale
-                        val startX = (cw - imgW) / 2 + offset.x
-                        val startY = (ch - imgH) / 2 + offset.y
-
-                        drawImage(
-                            image = bitmap!!.asImageBitmap(),
-                            dstOffset = IntOffset(startX.roundToInt(), startY.roundToInt()),
-                            dstSize = IntSize(imgW.roundToInt(), imgH.roundToInt())
-                        )
-                    }
-
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val path = androidx.compose.ui.graphics.Path().apply { addRect(cropRect) }
-                        clipPath(path, clipOp = ClipOp.Difference) {
-                            drawRect(Color.Black.copy(alpha = 0.75f))
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier.offset { IntOffset(cropRect.left.roundToInt(), cropRect.top.roundToInt()) }
-                            .size(with(density) { cropWidth.toDp() }, with(density) { cropHeight.toDp() })
-                            .border(1.5.dp, Color.White.copy(alpha = 0.8f))
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(bottom = 48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Button(
-                        onClick = {
-                            val imgW = bitmap!!.width * scale
-                            val imgH = bitmap!!.height * scale
-                            val startX = (cw - imgW) / 2 + offset.x
-                            val startY = (ch - imgH) / 2 + offset.y
-
-                            val relativeX = (cropRect.left - startX) / scale
-                            val relativeY = (cropRect.top - startY) / scale
-                            val relativeW = cropWidth / scale
-                            val relativeH = cropHeight / scale
-
-                            val cropped = Bitmap.createBitmap(
-                                bitmap!!,
-                                relativeX.roundToInt().coerceIn(0, bitmap!!.width - 1),
-                                relativeY.roundToInt().coerceIn(0, bitmap!!.height - 1),
-                                relativeW.roundToInt().coerceAtMost(bitmap!!.width - relativeX.roundToInt()),
-                                relativeH.roundToInt().coerceAtMost(bitmap!!.height - relativeY.roundToInt())
-                            )
-                            onCropConfirmed(cropped)
-                        },
-                        shape = RoundedCornerShape(24.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-                    ) {
-                        Text(stringResource(R.string.action_confirm_crop))
-                    }
-                }
-            }
-        } else {
-            CircularProgressIndicator(color = Color.White)
-        }
     }
 }
 

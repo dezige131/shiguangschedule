@@ -2,7 +2,6 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings.style
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
