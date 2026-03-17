@@ -31,17 +31,15 @@ class CourseAlarmReceiver : BroadcastReceiver() {
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "course_notification_channel"
-        const val LIVE_COURSE_CHANNEL_ID = "live_course_progress_channel"
-        const val NOTIFICATION_ID_BASE = 1000
-        const val LIVE_COURSE_NOTIFICATION_ID = 2026
         const val EXTRA_COURSE_NAME = "course_name"
         const val EXTRA_COURSE_POSITION = "course_position"
+        const val EXTRA_COURSE_TEACHER = "extra_course_teacher"
         const val EXTRA_COURSE_ID = "course_id"
         const val EXTRA_DND_ACTION = "extra_dnd_action"
         const val DND_ACTION_START = "dnd_action_start"
         const val DND_ACTION_END = "dnd_action_end"
-        const val ACTION_LIVE_PROGRESS = "action_live_progress"
-        const val ACTION_CANCEL_LIVE_PROGRESS = "action_cancel_live_progress"
+
+        const val ACTION_DISMISS_NOTIFICATION = "com.xingheyuzhuan.shiguangschedule.ACTION_DISMISS_NOTIFICATION"
 
         private const val ALARM_IDS_PREFS = "alarm_ids_prefs"
         private const val KEY_ACTIVE_ALARM_IDS = "active_alarm_ids"
@@ -51,10 +49,7 @@ class CourseAlarmReceiver : BroadcastReceiver() {
             val audioManager = context.getSystemService<AudioManager>()
             val notificationManager = context.getSystemService<NotificationManager>()
             if (audioManager == null || notificationManager == null) return
-
-            // 检查是否有免打扰权限
             if (!notificationManager.isNotificationPolicyAccessGranted) return
-
             when (modeType) {
                 AutoControlMode.DND -> {
                     notificationManager.setInterruptionFilter(
@@ -71,57 +66,43 @@ class CourseAlarmReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.d(TAG, ">>> onReceive 触发！Action: ${intent?.action}, Data: ${intent?.data}")
         context?.let { ctx ->
+            if (intent?.action == ACTION_DISMISS_NOTIFICATION) {
+                val notifyId = intent.getIntExtra("target_notification_id", -1)
+                if (notifyId != -1) {
+                    val nm = ctx.getSystemService<NotificationManager>()
+                    nm?.cancel(notifyId)
+                }
+                return
+            }
+
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // 使用 Repository 提供的单次读取方法获取配置
                     val appSettings = appSettingsRepository.getAppSettingsOnce() ?: return@launch
                     val modeToUse = appSettings.autoControlMode
                     val dndAction = intent?.getStringExtra(EXTRA_DND_ACTION)
 
                     if (!dndAction.isNullOrEmpty()) {
                         when (dndAction) {
-                            DND_ACTION_START -> {
-                                Log.i(TAG, "执行上课模式开启 ($modeToUse)")
-                                toggleMode(ctx, true, modeToUse)
-                            }
+                            DND_ACTION_START -> toggleMode(ctx, true, modeToUse)
                             DND_ACTION_END -> {
-                                Log.i(TAG, "执行下课模式恢复")
                                 toggleMode(ctx, false, modeToUse)
-                                ctx.getSystemService<NotificationManager>()?.cancel(LIVE_COURSE_NOTIFICATION_ID)
                                 DndSchedulerWorker.enqueueWork(ctx)
-                            }
-                            ACTION_LIVE_PROGRESS -> {
-                                val startTime = intent.getLongExtra("extra_start_time", 0L)
-                                val endTime = intent.getLongExtra("extra_end_time", 0L)
-                                val courseName = intent.getStringExtra(EXTRA_COURSE_NAME) ?: "未知课程"
-
-                                if (startTime != 0L && endTime != 0L) {
-                                    val nm = ctx.getSystemService<NotificationManager>()
-                                    val isPromotedSupported = if (Build.VERSION.SDK_INT >= 36) {
-                                        nm?.canPostPromotedNotifications() == true
-                                    } else false
-
-                                    Log.i(TAG, "触发实时进度条显示: $courseName, 提拔权限: $isPromotedSupported")
-                                    showLiveProgressNotification(ctx, courseName, startTime, endTime, isPromotedSupported)
-                                }
-                            }
-                            ACTION_CANCEL_LIVE_PROGRESS -> {
-                                Log.i(TAG, "课程已准时结束，正在清理实时进度通知")
-                                ctx.getSystemService<NotificationManager>()?.cancel(LIVE_COURSE_NOTIFICATION_ID)
                             }
                         }
                     } else {
-                        // 普通提醒逻辑
-                        val courseName = intent?.getStringExtra(EXTRA_COURSE_NAME) ?: ctx.getString(R.string.notification_unknown_course)
-                        val coursePosition = intent?.getStringExtra(EXTRA_COURSE_POSITION) ?: ctx.getString(R.string.notification_unknown_position)
+                        val courseName = intent?.getStringExtra(EXTRA_COURSE_NAME).takeUnless { it.isNullOrEmpty() }
+                            ?: ctx.getString(R.string.notification_unknown_course)
+
+                        val position = intent?.getStringExtra(EXTRA_COURSE_POSITION).takeUnless { it.isNullOrEmpty() }
+                            ?: ctx.getString(R.string.notification_unknown_position)
+                        val teacher = intent?.getStringExtra(EXTRA_COURSE_TEACHER) ?: ""
                         val courseIdString = intent?.getStringExtra(EXTRA_COURSE_ID)
-                        Log.d(TAG, "普通提醒触发: $courseName")
+
                         if (!courseIdString.isNullOrEmpty()) {
                             val notificationId = courseIdString.hashCode() and 0x7fffffff
-                            showNotification(ctx, notificationId, courseName, coursePosition)
+                            showNotification(ctx, notificationId, courseName, position, teacher)
                             removeAlarmIdFromPrefs(ctx, courseIdString)
                             updateAllWidgets(ctx)
                         }
@@ -130,44 +111,63 @@ class CourseAlarmReceiver : BroadcastReceiver() {
                     Log.e(TAG, "onReceive 异常", e)
                 } finally {
                     pendingResult.finish()
-                    Log.d(TAG, "<<< onReceive 完成")
                 }
             }
         }
     }
 
-    private fun showLiveProgressNotification(context: Context, name: String, start: Long, end: Long, isPromoted: Boolean) {
+    private fun showNotification(
+        context: Context,
+        notificationId: Int,
+        name: String,
+        position: String,
+        teacher: String
+    ) {
         val nm = context.getSystemService<NotificationManager>() ?: return
 
-        if (nm.getNotificationChannel(LIVE_COURSE_CHANNEL_ID) == null) {
+        val alertTitle = context.getString(R.string.notification_title_course_alert)
+        val posLabel = context.getString(R.string.label_position)
+        val teacherLabel = context.getString(R.string.label_teacher)
+        val closeActionText = context.getString(R.string.action_close)
+        val liveStatusText = context.getString(R.string.notification_live_status_preparing)
+
+        if (nm.getNotificationChannel(NOTIFICATION_CHANNEL_ID) == null) {
             val channel = NotificationChannel(
-                LIVE_COURSE_CHANNEL_ID,
-                context.getString(R.string.notification_channel_live_progress),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = context.getString(R.string.notification_channel_desc_live_progress)
-            }
+                NOTIFICATION_CHANNEL_ID,
+                context.getString(R.string.item_course_reminder),
+                NotificationManager.IMPORTANCE_HIGH
+            )
             nm.createNotificationChannel(channel)
         }
 
-        val now = System.currentTimeMillis()
-        val total = (end - start).coerceAtLeast(1L)
-        val progress = (((now - start).toFloat() / total.toFloat()) * 100).toInt().coerceIn(0, 100)
-        val remainingMinutes = ((end - now) / 60000).coerceAtLeast(0)
+        val dismissIntent = Intent(context, CourseAlarmReceiver::class.java).apply {
+            action = ACTION_DISMISS_NOTIFICATION
+            putExtra("target_notification_id", notificationId)
+        }
+        val dismissPI = PendingIntent.getBroadcast(
+            context, notificationId, dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        val fullTemplateText = context.getString(R.string.notification_live_content_template, remainingMinutes)
-        val displayName = name.ifEmpty { context.getString(R.string.notification_default_course_name) }
+        val bigTextStyle = NotificationCompat.BigTextStyle()
+            .setBigContentTitle(name)
+            .bigText("$posLabel: $position\n$teacherLabel: $teacher")
 
-        val builder = NotificationCompat.Builder(context, LIVE_COURSE_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(displayName)
-            .setContentText(fullTemplateText)
+            .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+
+            // 基础信息设置
+            .setContentTitle(name)
+            .setContentText("$posLabel: $position")
+            .setSubText(alertTitle)
+            .setStyle(bigTextStyle)
             .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setProgress(100, progress, false)
-            .setWhen(end)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
+            .setAutoCancel(false)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setShowWhen(true)
+            .addAction(0, closeActionText, dismissPI)
             .setContentIntent(
                 PendingIntent.getActivity(
                     context, 0, Intent(context, MainActivity::class.java),
@@ -175,43 +175,12 @@ class CourseAlarmReceiver : BroadcastReceiver() {
                 )
             )
 
-
         if (Build.VERSION.SDK_INT >= 36) {
             builder.setRequestPromotedOngoing(true)
-            builder.setShortCriticalText(fullTemplateText)
+            builder.setShortCriticalText(liveStatusText)
         }
 
-        nm.notify(LIVE_COURSE_NOTIFICATION_ID, builder.build())
-    }
-
-    private fun showNotification(context: Context, courseId: Int, name: String, position: String) {
-        val nm = context.getSystemService<NotificationManager>() ?: return
-        if (nm.getNotificationChannel(NOTIFICATION_CHANNEL_ID) == null) {
-            val channel = NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                context.getString(R.string.item_course_reminder),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.notification_channel_desc_course_alert)
-            }
-            nm.createNotificationChannel(channel)
-        }
-        val launchIntent = Intent(context, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, launchIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val largeIconBitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
-        val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setLargeIcon(largeIconBitmap)
-            .setContentTitle(context.getString(R.string.notification_title_course_alert))
-            .setContentText("$name - $position")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-        nm.notify(NOTIFICATION_ID_BASE + courseId, notification)
+        nm.notify(notificationId, builder.build())
     }
 
     private fun removeAlarmIdFromPrefs(context: Context, courseId: String) {

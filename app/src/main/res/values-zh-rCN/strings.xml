@@ -105,13 +105,7 @@
     <string name="toast_enable_reminder_first">请先开启「课程提醒」</string>
     <string name="alarm_option_none">不提醒</string>
     <string name="alarm_option_on_time">准时提醒</string>
-
-    <string name="item_live_progress_setting">上课进度条提醒</string>
-    <string name="text_go_to_system_settings">去系统设置</string>
-    <string name="notification_channel_live_progress">实时课程进度</string>
-    <string name="notification_channel_desc_live_progress">显示当前正在进行的课程剩余时间</string>
-    <string name="notification_default_course_name">课程进行中</string>
-    <string name="notification_live_content_template">%1$d min下课</string>
+    <string name="notification_live_status_preparing">准备上课</string>
     <string name="notification_unknown_course">未知课程</string>
     <string name="notification_unknown_position">地点未知</string>
 

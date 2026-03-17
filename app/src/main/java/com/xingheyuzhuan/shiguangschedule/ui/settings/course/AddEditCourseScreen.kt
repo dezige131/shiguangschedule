@@ -101,6 +101,11 @@ fun AddEditCourseScreen(
                     }
                 },
                 actions = {
+                    if (uiState.isEditing) {
+                        IconButton(onClick = viewModel::onDelete) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.a11y_delete))
+                        }
+                    }
                     IconButton(
                         onClick = {
                             if (uiState.name.isBlank()) {
@@ -119,11 +124,6 @@ fun AddEditCourseScreen(
                         }
                     ) {
                         Icon(Icons.Default.Done, contentDescription = stringResource(R.string.a11y_save))
-                    }
-                    if (uiState.isEditing) {
-                        IconButton(onClick = viewModel::onDelete) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.a11y_delete))
-                        }
                     }
                 }
             )

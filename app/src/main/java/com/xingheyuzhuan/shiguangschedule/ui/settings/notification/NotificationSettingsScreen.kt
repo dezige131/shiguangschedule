@@ -352,28 +352,6 @@ fun NotificationSettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        SettingItemRow(
-                            title = stringResource(R.string.item_live_progress_setting),
-                            currentValue = stringResource(R.string.text_go_to_system_settings),
-                            onClick = {
-                                // 跳转到该特定频道的系统设置页
-                                val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    // 必须与 CourseAlarmReceiver 里的 LIVE_COURSE_CHANNEL_ID 一致
-                                    putExtra(Settings.EXTRA_CHANNEL_ID, "live_course_progress_channel")
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // 降级：跳转到应用整体通知设置
-                                    val fallback = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    }
-                                    context.startActivity(fallback)
-                                }
-                            }
-                        )
-                        HorizontalDivider()
                         Text(stringResource(R.string.section_title_skip_dates), style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(stringResource(R.string.text_skip_dates_experimental), style = MaterialTheme.typography.bodyMedium)
