@@ -46,7 +46,13 @@ data class AppSettingsModel(
     val autoModeEnabled: Boolean = false,
 
     /** 自动化控制的具体模式，限定为 [AutoControlMode] */
-    val autoControlMode: AutoControlMode = AutoControlMode.DND
+    val autoControlMode: AutoControlMode = AutoControlMode.DND,
+
+    /** * 兼容穿戴设备同步通知的开关
+     * true: 开启兼容模式（关闭 Ongoing，方便手环抓取）
+     * false: 关闭兼容模式（默认，使用 Android 16 实时更新特性）
+     */
+    val compatWearableSync: Boolean = false // 默认为关闭
 ) {
     /**
      * 将 DataStore 的 Key 定义在伴生对象中。
@@ -60,5 +66,6 @@ data class AppSettingsModel(
         val KEY_SKIPPED_DATES = stringSetPreferencesKey("skipped_dates")
         val KEY_AUTO_MODE_ENABLED = booleanPreferencesKey("auto_mode_enabled")
         val KEY_AUTO_CONTROL_MODE = stringPreferencesKey("auto_control_mode")
+        val KEY_COMPAT_WEARABLE_SYNC = booleanPreferencesKey("compat_wearable_sync")
     }
 }

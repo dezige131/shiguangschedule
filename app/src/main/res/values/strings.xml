@@ -174,6 +174,8 @@
     <string name="text_no_skipped_dates">没有设置跳过的日期。</string>
     <string name="action_close">关闭</string>
     <string name="toast_notification_permission_denied">通知权限被拒绝，无法接收课程提醒。</string>
+    <string name="item_compat_wearable_sync">兼容穿戴设备同步通知</string>
+    <string name="desc_compat_wearable_sync">因 Android 16 实时通知属性与部分穿戴设备通知同步软件存在兼容性冲突，开启此项将优化同步兼容性，但会停用实时更新效果</string>
     
     <!-- 设置选项 -->
     <string name="title_schedule_settings">课程表设置</string>

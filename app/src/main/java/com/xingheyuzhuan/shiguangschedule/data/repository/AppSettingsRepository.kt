@@ -68,7 +68,8 @@ class AppSettingsRepository @Inject constructor(
             autoModeEnabled = prefs[AppSettingsModel.KEY_AUTO_MODE_ENABLED] ?: false,
             autoControlMode = AutoControlMode.fromString(
                 prefs[AppSettingsModel.KEY_AUTO_CONTROL_MODE]
-            )
+            ),
+            compatWearableSync = prefs[AppSettingsModel.KEY_COMPAT_WEARABLE_SYNC] ?: false
         )
     }
 
@@ -91,6 +92,7 @@ class AppSettingsRepository @Inject constructor(
             prefs[AppSettingsModel.KEY_SKIPPED_DATES] = newSettings.skippedDates
             prefs[AppSettingsModel.KEY_AUTO_MODE_ENABLED] = newSettings.autoModeEnabled
             prefs[AppSettingsModel.KEY_AUTO_CONTROL_MODE] = newSettings.autoControlMode.value
+            prefs[AppSettingsModel.KEY_COMPAT_WEARABLE_SYNC] = newSettings.compatWearableSync
         }
     }
 

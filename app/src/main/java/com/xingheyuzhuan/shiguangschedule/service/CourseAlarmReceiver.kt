@@ -95,6 +95,7 @@ class CourseAlarmReceiver : BroadcastReceiver() {
                 try {
                     val appSettings = appSettingsRepository.getAppSettingsOnce() ?: return@launch
                     val modeToUse = appSettings.autoControlMode
+                    val isCompatMode = appSettings.compatWearableSync
 
                     if (!dndAction.isNullOrEmpty()) {
                         when (dndAction) {
@@ -114,7 +115,7 @@ class CourseAlarmReceiver : BroadcastReceiver() {
                         val courseIdString = intent?.getStringExtra(EXTRA_COURSE_ID)
 
                         if (!courseIdString.isNullOrEmpty()) {
-                            showNotification(ctx, slotId, courseName, position, teacher)
+                            showNotification(ctx, slotId, courseName, position, teacher, isCompatMode)
                             removeAlarmIdFromPrefs(ctx, courseIdString)
                             updateAllWidgets(ctx)
                         }
@@ -133,7 +134,8 @@ class CourseAlarmReceiver : BroadcastReceiver() {
         notificationId: Int,
         name: String,
         position: String,
-        teacher: String
+        teacher: String,
+        isCompatMode: Boolean
     ) {
         val nm = context.getSystemService<NotificationManager>() ?: return
 
@@ -171,14 +173,15 @@ class CourseAlarmReceiver : BroadcastReceiver() {
         val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
-
-            // 基础信息设置
             .setContentTitle(name)
             .setContentText("$posLabel: $position")
             .setSubText(alertTitle)
             .setStyle(bigTextStyle)
-            .setOngoing(true)
-            .setAutoCancel(false)
+
+            // 非兼容模式应用
+            .setOngoing(!isCompatMode)
+            .setAutoCancel(isCompatMode)
+
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setShowWhen(true)
@@ -190,6 +193,7 @@ class CourseAlarmReceiver : BroadcastReceiver() {
                 )
             )
 
+        // Android 16 实时更新特性
         if (Build.VERSION.SDK_INT >= 36) {
             builder.setRequestPromotedOngoing(true)
             builder.setShortCriticalText(liveStatusText)
