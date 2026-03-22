@@ -367,7 +367,7 @@ async function demoSaveConfig() {
 
         if (result === true) {
             console.log("课表配置导入成功！");
-            AndroidBridge.showToast("测试配置导入成功！开学日期: 2025-09-01");
+            AndroidBridge.showToast("测试配置导入成功");
         } else {
             console.log("课表配置导入未成功，结果：" + result);
             AndroidBridge.showToast("测试配置导入失败，请查看日志。");
