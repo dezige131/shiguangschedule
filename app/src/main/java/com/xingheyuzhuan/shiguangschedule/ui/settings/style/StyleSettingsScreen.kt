@@ -376,6 +376,7 @@ private fun ScheduleGridContent(
         val startOfWeek = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(dayOfWeekStart))
         (0..6).map { startOfWeek.plusDays(it.toLong()) }
     }
+    val currentYearString = remember(today) { today.year.toString() }
     val dummyDates = remember(localDates) {
         val formatter = java.time.format.DateTimeFormatter.ofPattern("MM/dd")
         localDates.map { it.format(formatter) }
@@ -395,6 +396,7 @@ private fun ScheduleGridContent(
         ScheduleGrid(
             style = style,
             dates = dummyDates,
+            currentYear = currentYearString,
             timeSlots = demoUiState.timeSlots,
             mergedCourses = demoUiState.currentMergedCourses,
             showWeekends = demoUiState.showWeekends,

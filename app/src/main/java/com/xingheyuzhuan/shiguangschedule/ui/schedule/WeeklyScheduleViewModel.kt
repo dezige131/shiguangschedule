@@ -121,18 +121,22 @@ class WeeklyScheduleViewModel @Inject constructor(
         }
     }.flatMapLatest { it }
 
-    private var stringProvider: ((Int, Array<out Any>) -> String)? = null
+    private val _stringProviderFlow = MutableStateFlow<((Int, Array<out Any>) -> String)?>(null)
 
     fun setStringProvider(provider: (Int, Array<out Any>) -> String) {
-        this.stringProvider = provider
+        _stringProviderFlow.value = provider
     }
 
     init {
         viewModelScope.launch {
             val configAndTimeFlow = combine(
-                appSettingsFlow, courseTableConfigFlow, styleFlow, _pagerMondayDate
-            ) { settings, config, style, mondayDate ->
-                ScheduleConfigPackage(settings, config, style, mondayDate)
+                appSettingsFlow,
+                courseTableConfigFlow,
+                styleFlow,
+                _pagerMondayDate,
+                _stringProviderFlow
+            ) { settings, config, style, mondayDate, provider ->
+                ScheduleConfigPackage(settings, config, style, mondayDate, provider)
             }
 
             combine(configAndTimeFlow, currentCoursesFlow, timeSlotsFlow) { configPkg, cache, timeSlots ->
@@ -168,7 +172,7 @@ class WeeklyScheduleViewModel @Inject constructor(
                     semesterStartDate = startDate,
                     firstDayOfWeek = firstDayOfWeekInt,
                     weekIndexInPager = weekIndex,
-                    weekTitle = generateTitle(weekIndex, startDate, totalWeeks),
+                    weekTitle = generateTitle(weekIndex, startDate, totalWeeks, configPkg.provider),
                     currentWeekNumber = currentWeekNum,
                     pagerMondayDate = configPkg.mondayDate
                 )
@@ -176,14 +180,19 @@ class WeeklyScheduleViewModel @Inject constructor(
         }
     }
 
-    private fun generateTitle(weekIndex: Int?, startDate: LocalDate?, totalWeeks: Int): String {
+    private fun generateTitle(
+        weekIndex: Int?,
+        startDate: LocalDate?,
+        totalWeeks: Int,
+        provider: ((Int, Array<out Any>) -> String)?
+    ): String {
         val today = LocalDate.now()
-        val provider = stringProvider ?: return "..."
+        val p = provider ?: return "..."
         return when {
-            startDate == null -> provider(R.string.title_semester_not_set, emptyArray())
-            today.isBefore(startDate) -> provider(R.string.title_vacation_until_start, arrayOf(ChronoUnit.DAYS.between(today, startDate).toString()))
-            weekIndex != null && weekIndex in 1..totalWeeks -> provider(R.string.title_current_week, arrayOf(weekIndex.toString()))
-            else -> provider(R.string.title_vacation, emptyArray())
+            startDate == null -> p(R.string.title_semester_not_set, emptyArray())
+            today.isBefore(startDate) -> p(R.string.title_vacation_until_start, arrayOf(ChronoUnit.DAYS.between(today, startDate).toString()))
+            weekIndex != null && weekIndex in 1..totalWeeks -> p(R.string.title_current_week, arrayOf(weekIndex.toString()))
+            else -> p(R.string.title_vacation, emptyArray())
         }
     }
 
@@ -289,5 +298,6 @@ private data class ScheduleConfigPackage(
     val settings: AppSettingsModel,
     val config: CourseTableConfig?,
     val style: ScheduleGridStyle,
-    val mondayDate: LocalDate
+    val mondayDate: LocalDate,
+    val provider: ((Int, Array<out Any>) -> String)?
 )

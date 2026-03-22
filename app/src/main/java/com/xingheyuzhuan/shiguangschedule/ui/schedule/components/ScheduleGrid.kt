@@ -1,6 +1,5 @@
 package com.xingheyuzhuan.shiguangschedule.ui.schedule.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,6 +38,7 @@ interface ISchedulable {
 fun ScheduleGrid(
     style: ScheduleGridStyleComposed,
     dates: List<String>,
+    currentYear: String,
     timeSlots: List<TimeSlot>,
     mergedCourses: List<MergedCourseBlock>,
     showWeekends: Boolean,
@@ -74,18 +74,18 @@ fun ScheduleGrid(
         }
 
         Column(Modifier.fillMaxSize()) {
-            DayHeader(style, displayDays, dates, cellWidth, todayIndex, gridLineColor)
+            DayHeader(style, displayDays, dates, currentYear, todayIndex, gridLineColor)
 
             Row(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 TimeColumn(style, timeSlots, onTimeSlotClicked, Modifier.height(totalGridHeight), gridLineColor)
 
                 Box(Modifier.height(totalGridHeight).weight(1f)) {
-                    // 控制主体网格线显示
-                    if (!style.hideGridLines) {
-                        GridLines(displayDays.size, timeSlots.size, cellWidth, totalGridHeight, style.sectionHeight, gridLineColor)
-                    }
-
-                    ClickableGrid(displayDays.size, timeSlots.size, cellWidth, style.sectionHeight) { dayIdx, sec ->
+                    ClickableGrid(
+                        dayCount = displayDays.size,
+                        slotCount = timeSlots.size,
+                        sectionHeight = style.sectionHeight,
+                        lineColor = if (style.hideGridLines) Color.Transparent else gridLineColor
+                    ) { dayIdx, sec ->
                         onGridCellClicked(mapDisplayIndexToDay(dayIdx, firstDayOfWeek), sec)
                     }
 
@@ -119,25 +119,35 @@ fun ScheduleGrid(
 // 子组件
 
 @Composable
-private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String>, dates: List<String>, cellWidth: Dp, todayIndex: Int, lineColor: Color) {
-    Row(Modifier.fillMaxWidth().height(style.dayHeaderHeight).drawBehind {
-        // 表头底部横线
-        if (!style.hideGridLines) {
-            drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
+private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String>, dates: List<String>, currentYear: String, todayIndex: Int, lineColor: Color) {
+    Row(Modifier.fillMaxWidth().height(style.dayHeaderHeight)) {
+        Box(
+            Modifier
+                .width(style.timeColumnWidth)
+                .fillMaxHeight()
+                .drawBehind {
+                    if (!style.hideGridLines) {
+                        // 右侧线与底部线
+                        drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
+                        drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = currentYear,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-    }) {
-        Spacer(Modifier.width(style.timeColumnWidth).fillMaxHeight().drawBehind {
-            // 时间轴右侧分割线
-            if (!style.hideGridLines) {
-                drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
-            }
-        })
         displayDays.forEachIndexed { index, day ->
-            Box(Modifier.width(cellWidth).fillMaxHeight()
+            Box(Modifier.weight(1f).fillMaxHeight()
                 .background(if (index == todayIndex) MaterialTheme.colorScheme.primaryContainer.copy(0.4f) else Color.Transparent)
                 .drawBehind {
                     if (!style.hideGridLines) {
                         drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
+                        drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
                     }
                 }, contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -163,14 +173,12 @@ private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String
 
 @Composable
 private fun TimeColumn(style: ScheduleGridStyleComposed, timeSlots: List<TimeSlot>, onTimeSlotClicked: () -> Unit, modifier: Modifier, lineColor: Color) {
-    Column(modifier.width(style.timeColumnWidth).drawBehind {
-        if (!style.hideGridLines) {
-            drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
-        }
-    }) {
+    Column(modifier.width(style.timeColumnWidth)) {
         timeSlots.forEach { slot ->
             Column(Modifier.fillMaxWidth().height(style.sectionHeight).clickable { onTimeSlotClicked() }.drawBehind {
                 if (!style.hideGridLines) {
+                    // 右侧线与底部线
+                    drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
                     drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
                 }
             }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -198,27 +206,22 @@ private fun TimeColumn(style: ScheduleGridStyleComposed, timeSlots: List<TimeSlo
 }
 
 @Composable
-private fun GridLines(dayCount: Int, slotCount: Int, cellWidth: Dp, totalHeight: Dp, sectionHeight: Dp, lineColor: Color) {
-    Canvas(Modifier.fillMaxSize()) {
-        val h = totalHeight.toPx()
-        repeat(dayCount) { i ->
-            val x = i * cellWidth.toPx()
-            drawLine(lineColor, Offset(x, 0f), Offset(x, h), 1f)
-        }
-        repeat(slotCount) { i ->
-            val y = i * sectionHeight.toPx()
-            drawLine(lineColor, Offset(0f, y), Offset(size.width, y), 1f)
-        }
-    }
-}
-
-@Composable
-private fun ClickableGrid(dayCount: Int, slotCount: Int, cellWidth: Dp, sectionHeight: Dp, onClick: (Int, Int) -> Unit) {
+private fun ClickableGrid(dayCount: Int, slotCount: Int, sectionHeight: Dp, lineColor: Color, onClick: (Int, Int) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         for (sec in 1..slotCount) {
             Row(Modifier.fillMaxWidth().height(sectionHeight)) {
                 repeat(dayCount) { idx ->
-                    Spacer(Modifier.width(cellWidth).fillMaxHeight().clickable { onClick(idx, sec) })
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .drawBehind {
+                                // 绘制逻辑间隔线
+                                drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
+                                drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
+                            }
+                            .clickable { onClick(idx, sec) }
+                    )
                 }
             }
         }

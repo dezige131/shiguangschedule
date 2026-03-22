@@ -3,18 +3,25 @@ package com.xingheyuzhuan.shiguangschedule.ui.schedule
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -44,7 +51,7 @@ private const val INFINITE_PAGER_CENTER = Int.MAX_VALUE / 2
 
 /**
  * 周课表主屏幕组件。
- * 持三周滑动窗口预加载，消除滑动残留与加载闪烁。
+ * 支持三周滑动窗口预加载，消除滑动残留与加载闪烁。
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -115,16 +122,31 @@ fun WeeklyScheduleScreen(
                 val isTransparent = composedStyle.backgroundImagePath.isNotEmpty()
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(
-                            text = uiState.weekTitle,
-                            modifier = Modifier.clickable {
-                                if (!uiState.isSemesterSet || uiState.semesterStartDate == null) {
-                                    navController.navigate(Screen.Settings.route)
-                                } else {
-                                    showWeekSelector = true
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable {
+                                    if (!uiState.isSemesterSet || uiState.semesterStartDate == null) {
+                                        navController.navigate(Screen.Settings.route)
+                                    } else {
+                                        showWeekSelector = true
+                                    }
                                 }
-                            }
-                        )
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = uiState.weekTitle,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .offset(y = (-4).dp),
+                                tint = if (isTransparent) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = if (isTransparent) Color.Transparent else MaterialTheme.colorScheme.surface,
@@ -156,6 +178,10 @@ fun WeeklyScheduleScreen(
                     today.with(TemporalAdjusters.previousOrSame(firstDay)).plusWeeks(offsetWeeks)
                 }
 
+                val pageYearString = remember(pageMondayDate) {
+                    pageMondayDate.year.toString()
+                }
+
                 // 独立日期列表：计算该页显示的日期文本
                 val pageDateStrings = remember(pageMondayDate) {
                     val formatter = DateTimeFormatter.ofPattern("MM-dd")
@@ -174,6 +200,7 @@ fun WeeklyScheduleScreen(
                 ScheduleGrid(
                     style = composedStyle,
                     dates = pageDateStrings,
+                    currentYear = pageYearString,
                     timeSlots = uiState.timeSlots,
                     mergedCourses = pageCourses, // 绑定本页专属数据
                     showWeekends = uiState.showWeekends,
