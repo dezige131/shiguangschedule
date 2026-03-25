@@ -187,8 +187,9 @@ class StyleSettingsViewModel @Inject constructor(
         styleRepository.setShowStartTime(show)
     }
 
-    fun updateConflictColor(color: Color, isDark: Boolean) = viewModelScope.launch {
-        styleRepository.setConflictCourseColorLong(color.toArgb().toLong(), isDark)
+    /** 重叠课程的背景颜色 */
+    fun updateOverlapColor(color: Color, isDark: Boolean) = viewModelScope.launch {
+        styleRepository.setOverlapCourseColorLong(color.toArgb().toLong(), isDark)
     }
 
     /** * 更新课程块字体的缩放比例

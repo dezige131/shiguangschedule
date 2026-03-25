@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -37,10 +38,10 @@ fun CourseBlock(
     val firstCourse = mergedBlock.courses.firstOrNull()
     val isDarkTheme = isSystemInDarkTheme() // 获取当前主题模式
 
-    val conflictColorAdapted = if (isDarkTheme) {
-        style.conflictCourseColorDark // 使用深色冲突色
+    val overlapColorAdapted = if (isDarkTheme) {
+        style.overlapCourseColorDark
     } else {
-        style.conflictCourseColor // 使用浅色冲突色
+        style.overlapCourseColor
     }
 
     // 尝试获取颜色索引 (colorInt)
@@ -65,15 +66,14 @@ fun CourseBlock(
     }
 
     val blockColor = if (mergedBlock.isConflict) {
-        conflictColorAdapted.copy(alpha = style.courseBlockAlpha)
+        overlapColorAdapted.copy(alpha = style.courseBlockAlpha)
     } else {
         (courseColorAdapted ?: fallbackColorAdapted).copy(alpha = style.courseBlockAlpha)
     }
 
     val textColor = MaterialTheme.colorScheme.onSurface
 
-    // --- 字体大小计算逻辑 (新增) ---
-    // 通过将基准字号乘以缩放因子，实现全局联动
+    // 字体大小计算逻辑
     val s13 = (13 * style.fontScale).sp
     val s12 = (12 * style.fontScale).sp
     val s10 = (10 * style.fontScale).sp
@@ -93,6 +93,7 @@ fun CourseBlock(
             .clip(RoundedCornerShape(style.courseBlockCornerRadius))
             .background(color = blockColor)
     ) {
+        // 原始内容层
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -103,7 +104,7 @@ fun CourseBlock(
                 mergedBlock.courses.forEach { course ->
                     Text(
                         text = course.course.name,
-                        fontSize = s12, // 使用缩放后的 12sp
+                        fontSize = s12,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
                         overflow = TextOverflow.Ellipsis,
@@ -111,18 +112,18 @@ fun CourseBlock(
                     )
                 }
                 Text(
-                    text = stringResource(R.string.label_conflict),
-                    fontSize = s10, // 使用缩放后的 10sp
+                    text = stringResource(R.string.label_overlap),
+                    fontSize = s10,
                     color = textColor,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             } else {
-                // --- 1. 时间显示层 ---
+                // 时间显示层
                 if (isCustomTimeCourse) {
                     Text(
                         text = customTimeString,
-                        fontSize = s10, // 使用缩放后的 10sp
+                        fontSize = s10,
                         color = textColor.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold,
                         overflow = TextOverflow.Ellipsis,
@@ -131,14 +132,14 @@ fun CourseBlock(
                 } else if (style.showStartTime && startTime != null) {
                     Text(
                         text = startTime,
-                        fontSize = s10, // 使用缩放后的 10sp
+                        fontSize = s10,
                         color = textColor.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold,
                         style = TextStyle(lineHeight = 1.em)
                     )
                 }
 
-                // --- 2. 课程名称 ---
+                // 课程名称
                 Text(
                     text = firstCourse?.course?.name ?: "",
                     fontSize = s13,
@@ -149,8 +150,8 @@ fun CourseBlock(
                     style = TextStyle(lineHeight = 1.2.em)
                 )
 
-                // --- 3. 教师 (受 hideTeacher 开关控制) ---
-                if (!style.hideTeacher) { // 如果不隐藏，则显示
+                // 教师
+                if (!style.hideTeacher) {
                     val teacher = firstCourse?.course?.teacher ?: ""
                     if (teacher.isNotBlank()) {
                         Text(
@@ -163,11 +164,10 @@ fun CourseBlock(
                     }
                 }
 
-                // --- 4. 地点 (受 hideLocation 和 removeLocationAt 开关控制) ---
-                if (!style.hideLocation) { // 如果不隐藏，则显示
+                // 地点
+                if (!style.hideLocation) {
                     val position = firstCourse?.course?.position ?: ""
                     if (position.isNotBlank()) {
-                        // 根据 removeLocationAt 决定前缀
                         val prefix = if (style.removeLocationAt) "" else "@"
                         Text(
                             text = "$prefix$position",
@@ -179,6 +179,32 @@ fun CourseBlock(
                     }
                 }
             }
+        }
+
+        // 视觉降级蒙版层
+        if (mergedBlock.isVisualDemoted) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        color = (if (isDarkTheme) Color.Black else Color.White)
+                            .copy(alpha = 0.618f)
+                    )
+                    .drawBehind {
+                        val stripeWidth = 5.dp.toPx()
+                        val stripeColor = (if (isDarkTheme) Color.White else Color.Black).copy(alpha = 0.06f)
+                        val brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            0.0f to stripeColor,
+                            0.45f to stripeColor,
+                            0.55f to Color.Transparent,
+                            1.0f to Color.Transparent,
+                            start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                            end = androidx.compose.ui.geometry.Offset(stripeWidth, stripeWidth),
+                            tileMode = androidx.compose.ui.graphics.TileMode.Repeated
+                        )
+                        drawRect(brush = brush)
+                    }
+            )
         }
     }
 }

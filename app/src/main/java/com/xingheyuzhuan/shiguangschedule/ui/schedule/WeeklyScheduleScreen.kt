@@ -33,7 +33,7 @@ import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
 import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
 import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
 import com.xingheyuzhuan.shiguangschedule.ui.components.BottomNavigationBar
-import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ConflictCourseBottomSheet
+import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.OverlapCourseBottomSheet
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGrid
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.WeekSelectorBottomSheet
@@ -93,8 +93,8 @@ fun WeeklyScheduleScreen(
 
     // UI 交互控制
     var showWeekSelector by remember { mutableStateOf(false) }
-    var showConflictBottomSheet by remember { mutableStateOf(false) }
-    var conflictCoursesToShow by remember { mutableStateOf(emptyList<CourseWithWeeks>()) }
+    var showOverlapBottomSheet by remember { mutableStateOf(false) }
+    var overlapCoursesToShow by remember { mutableStateOf(emptyList<CourseWithWeeks>()) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -202,16 +202,18 @@ fun WeeklyScheduleScreen(
                     dates = pageDateStrings,
                     currentYear = pageYearString,
                     timeSlots = uiState.timeSlots,
-                    mergedCourses = pageCourses, // 绑定本页专属数据
+                    mergedCourses = pageCourses,
                     showWeekends = uiState.showWeekends,
                     todayIndex = pageTodayIndex,
                     firstDayOfWeek = uiState.firstDayOfWeek,
                     currentSectionIndex = if (pageTodayIndex >= 0) uiState.currentSectionIndex else -1,
                     onCourseBlockClicked = { mergedBlock ->
-                        if (mergedBlock.isConflict) {
-                            conflictCoursesToShow = mergedBlock.courses
-                            showConflictBottomSheet = true
+                        // 如果有超过一门课（无论是否本周），都打开重叠弹窗
+                        if (mergedBlock.courses.size > 1) {
+                            overlapCoursesToShow = mergedBlock.courses
+                            showOverlapBottomSheet = true
                         } else {
+                            // 只有一门课时直接进入编辑
                             mergedBlock.courses.firstOrNull()?.course?.id?.let {
                                 navController.navigate(Screen.AddEditCourse.createRouteWithCourseId(it))
                             }
@@ -255,17 +257,18 @@ fun WeeklyScheduleScreen(
         )
     }
 
-    // 冲突处理弹窗
-    if (showConflictBottomSheet) {
-        ConflictCourseBottomSheet(
+    // 重叠课程处理弹窗
+    if (showOverlapBottomSheet) {
+        OverlapCourseBottomSheet(
             style = composedStyle,
-            courses = conflictCoursesToShow,
+            courses = overlapCoursesToShow,
             timeSlots = uiState.timeSlots,
+            currentWeek = uiState.weekIndexInPager,
             onCourseClicked = { course ->
-                showConflictBottomSheet = false
+                showOverlapBottomSheet = false
                 navController.navigate(Screen.AddEditCourse.createRouteWithCourseId(course.course.id))
             },
-            onDismissRequest = { showConflictBottomSheet = false }
+            onDismissRequest = { showOverlapBottomSheet = false }
         )
     }
 }

@@ -29,8 +29,8 @@ data class ScheduleGridStyle(
     val courseBlockAlphaFloat: Float = DEFAULT_BLOCK_ALPHA,
 
     // 颜色 (单位: Long/ARGB)
-    val conflictCourseColorLong: Long = DEFAULT_CONFLICT_COLOR,
-    val conflictCourseColorDarkLong: Long = DEFAULT_CONFLICT_COLOR_DARK,
+    val overlapCourseColorLong: Long = DEFAULT_OVERLAP_COLOR,
+    val overlapCourseColorDarkLong: Long = DEFAULT_OVERLAP_COLOR_DARK,
 
     // 颜色列表
     val courseColorMaps: List<DualColor> = DEFAULT_COLOR_MAPS,
@@ -64,8 +64,8 @@ data class ScheduleGridStyle(
         internal val DEFAULT_BLOCK_INNER_PADDING = 4f
         internal val DEFAULT_BLOCK_ALPHA = 1f
         internal val DEFAULT_FONT_SCALE = 1f
-        internal val DEFAULT_CONFLICT_COLOR = 0xFFFF9999L
-        internal val DEFAULT_CONFLICT_COLOR_DARK = 0xFF660000L
+        internal val DEFAULT_OVERLAP_COLOR = 0xFFFF9999L
+        internal val DEFAULT_OVERLAP_COLOR_DARK = 0xFF660000L
 
         internal val DEFAULT_COLOR_MAPS = listOf(
             DualColor(light = Color(0xFFFFCC99), dark = Color(0xFF663300)),
@@ -94,8 +94,8 @@ data class ScheduleGridStyle(
             courseBlockOuterPaddingDp = DEFAULT_BLOCK_OUTER_PADDING,
             courseBlockInnerPaddingDp = DEFAULT_BLOCK_INNER_PADDING,
             courseBlockAlphaFloat = DEFAULT_BLOCK_ALPHA,
-            conflictCourseColorLong = DEFAULT_CONFLICT_COLOR,
-            conflictCourseColorDarkLong = DEFAULT_CONFLICT_COLOR_DARK,
+            overlapCourseColorLong = DEFAULT_OVERLAP_COLOR,
+            overlapCourseColorDarkLong = DEFAULT_OVERLAP_COLOR_DARK,
             courseColorMaps = DEFAULT_COLOR_MAPS,
             courseBlockFontScale = DEFAULT_FONT_SCALE,
             hideGridLines = false,
@@ -149,8 +149,8 @@ fun ScheduleGridStyleProto.toCompose(): ScheduleGridStyle {
         courseBlockFontScale = if (hasCourseBlockFontScale()) courseBlockFontScale else d.courseBlockFontScale,
 
         // 4. 颜色配置
-        conflictCourseColorLong = if (hasConflictCourseColorLong()) conflictCourseColorLong else d.conflictCourseColorLong,
-        conflictCourseColorDarkLong = if (hasConflictCourseColorDarkLong()) conflictCourseColorDarkLong else d.conflictCourseColorDarkLong,
+        overlapCourseColorLong = if (hasOverlapCourseColorLong()) overlapCourseColorLong else d.overlapCourseColorLong,
+        overlapCourseColorDarkLong = if (hasOverlapCourseColorDarkLong()) overlapCourseColorDarkLong else d.overlapCourseColorDarkLong,
 
         // 5. 其他列表和布尔值
         courseColorMaps = if (this.courseColorMapsList.isEmpty()) d.courseColorMaps else this.courseColorMapsList.map { it.toCompose() },
@@ -179,8 +179,8 @@ fun ScheduleGridStyle.toProto(): ScheduleGridStyleProto {
         courseBlockOuterPaddingDp = this@toProto.courseBlockOuterPaddingDp
         courseBlockInnerPaddingDp = this@toProto.courseBlockInnerPaddingDp
         courseBlockAlphaFloat = this@toProto.courseBlockAlphaFloat
-        conflictCourseColorLong = this@toProto.conflictCourseColorLong
-        conflictCourseColorDarkLong = this@toProto.conflictCourseColorDarkLong
+        overlapCourseColorLong = this@toProto.overlapCourseColorLong
+        overlapCourseColorDarkLong = this@toProto.overlapCourseColorDarkLong
         courseBlockFontScale = this@toProto.courseBlockFontScale
 
         addAllCourseColorMaps(this@toProto.courseColorMaps.map { it.toProto() })

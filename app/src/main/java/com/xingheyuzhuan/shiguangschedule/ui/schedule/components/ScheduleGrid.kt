@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.times
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.MergedCourseBlock
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 
 /**
  * 绘图模型接口
@@ -173,62 +176,77 @@ private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String
 }
 
 @Composable
-private fun TimeColumn(style: ScheduleGridStyleComposed, timeSlots: List<TimeSlot>, onTimeSlotClicked: () -> Unit, modifier: Modifier, lineColor: Color, currentSectionIndex: Int = -1) {
+private fun TimeColumn(
+    style: ScheduleGridStyleComposed,
+    timeSlots: List<TimeSlot>,
+    onTimeSlotClicked: () -> Unit,
+    modifier: Modifier,
+    lineColor: Color,
+    currentSectionIndex: Int = -1
+) {
     Column(modifier.width(style.timeColumnWidth)) {
         timeSlots.forEachIndexed { index, slot ->
             val isCurrentSection = index + 1 == currentSectionIndex
-            val backgroundColor = if (isCurrentSection) {
-                MaterialTheme.colorScheme.primaryContainer.copy(0.4f)
-            } else {
-                Color.Transparent
-            }
-            val textColor = if (isCurrentSection) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            }
-            val timeColor = if (isCurrentSection) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
 
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(style.sectionHeight)
                     .clickable { onTimeSlotClicked() }
-                    .background(backgroundColor)
+                    .background(if (isCurrentSection) MaterialTheme.colorScheme.primaryContainer.copy(0.4f) else Color.Transparent)
                     .drawBehind {
                         if (!style.hideGridLines) {
                             drawLine(lineColor, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
                             drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), 1f)
                         }
                     },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = slot.number.toString(),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor
-                )
-                if (!style.hideSectionTime) {
+                val h = maxHeight // 当前格子的高度
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = slot.startTime,
-                        fontSize = 10.sp,
-                        color = timeColor
+                        text = slot.number.toString(),
+                        fontSize = if (h < 32.dp) 12.sp else 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = slot.endTime,
-                        fontSize = 10.sp,
-                        color = timeColor
-                    )
+                    if (!style.hideSectionTime) {
+                        when {
+                            // 充足空间：标准三行排列，带适度间距
+                            h >= 52.dp -> {
+                                Spacer(Modifier.height(2.dp))
+                                TimeText(slot.startTime)
+                                TimeText(slot.endTime)
+                            }
+                            // 紧凑空间：合并为一行，横向展示
+                            h >= 38.dp -> {
+                                Text(
+                                    text = "${slot.startTime}-${slot.endTime}",
+                                    fontSize = 8.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TimeText(text: String) {
+    Text(
+        text = text,
+        fontSize = 10.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = TextStyle(lineHeight = 1.em)
+    )
 }
 
 @Composable

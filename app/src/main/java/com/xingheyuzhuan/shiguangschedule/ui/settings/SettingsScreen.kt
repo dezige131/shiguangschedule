@@ -3,6 +3,7 @@ package com.xingheyuzhuan.shiguangschedule.ui.settings
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,31 +64,9 @@ fun SettingsScreen(
     navController: NavHostController,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val courseTableConfig by viewModel.courseTableConfigState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-
-    val showWeekends = courseTableConfig?.showWeekends ?: false
-    val semesterStartDateString = courseTableConfig?.semesterStartDate
-    val semesterTotalWeeks = courseTableConfig?.semesterTotalWeeks ?: 20
-    val firstDayOfWeekInt = courseTableConfig?.firstDayOfWeek ?: DayOfWeek.MONDAY.value
-    val displayCurrentWeek by viewModel.currentWeekState.collectAsState()
-
-    val semesterStartDate: LocalDate? = remember(semesterStartDateString) {
-        semesterStartDateString?.let {
-            try {
-                LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE)
-            } catch (e: DateTimeParseException) {
-                Log.e("SettingsScreen", "Failed to parse date string: $it", e)
-                null
-            }
-        }
-    }
-
-    var showTotalWeeksDialog by remember { mutableStateOf(false) }
-    var showManualWeekDialog by remember { mutableStateOf(false) }
-    var showDatePickerModal by remember { mutableStateOf(false) }
-    var showFirstDayOfWeekDialog by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
@@ -103,87 +82,119 @@ fun SettingsScreen(
             BottomNavigationBar(navController = navController, currentRoute = currentRoute)
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = SETTING_PADDING),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
-        ) {
-            item {
-                // 通用设置卡片
-                GeneralSettingsSection(
-                    showWeekends = showWeekends,
-                    onShowWeekendsChanged = { isChecked -> viewModel.onShowWeekendsChanged(isChecked) },
-                    semesterStartDate = semesterStartDate,
-                    semesterTotalWeeks = semesterTotalWeeks,
-                    firstDayOfWeekInt = firstDayOfWeekInt,
-                    displayCurrentWeek = displayCurrentWeek,
-                    onSemesterStartDateClick = { showDatePickerModal = true },
-                    onSemesterTotalWeeksClick = { showTotalWeeksDialog = true },
-                    onManualWeekClick = { showManualWeekDialog = true },
-                    onFirstDayOfWeekClick = { showFirstDayOfWeekDialog = true },
-                    onQuickActionsClick = { navController.navigate(Screen.QuickActions.route) }
+        if (!uiState.isReady) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
+        } else {
+            // 从原子状态中解构数据
+            val appSettings = uiState.appSettings
+            val courseTableConfig = uiState.courseConfig
+            val displayCurrentWeek = uiState.currentWeek
+
+            val showWeekends = courseTableConfig?.showWeekends ?: false
+            val semesterStartDateString = courseTableConfig?.semesterStartDate
+            val semesterTotalWeeks = courseTableConfig?.semesterTotalWeeks ?: 20
+            val firstDayOfWeekInt = courseTableConfig?.firstDayOfWeek ?: DayOfWeek.MONDAY.value
+
+            val semesterStartDate: LocalDate? = remember(semesterStartDateString) {
+                semesterStartDateString?.let {
+                    try {
+                        LocalDate.parse(it, DateTimeFormatter.ISO_LOCAL_DATE)
+                    } catch (e: DateTimeParseException) {
+                        Log.e("SettingsScreen", "Failed to parse date string: $it", e)
+                        null
+                    }
+                }
+            }
+
+            var showTotalWeeksDialog by remember { mutableStateOf(false) }
+            var showManualWeekDialog by remember { mutableStateOf(false) }
+            var showDatePickerModal by remember { mutableStateOf(false) }
+            var showFirstDayOfWeekDialog by remember { mutableStateOf(false) }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = SETTING_PADDING),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
+            ) {
+                item {
+                    // 通用设置卡片
+                    GeneralSettingsSection(
+                        showNonCurrentWeek = appSettings.showNonCurrentWeekCourses,
+                        onShowNonCurrentWeekChanged = { isChecked -> viewModel.onShowNonCurrentWeekChanged(isChecked) },
+                        showWeekends = showWeekends,
+                        onShowWeekendsChanged = { isChecked -> viewModel.onShowWeekendsChanged(isChecked) },
+                        semesterStartDate = semesterStartDate,
+                        semesterTotalWeeks = semesterTotalWeeks,
+                        firstDayOfWeekInt = firstDayOfWeekInt,
+                        displayCurrentWeek = displayCurrentWeek,
+                        onSemesterStartDateClick = { showDatePickerModal = true },
+                        onSemesterTotalWeeksClick = { showTotalWeeksDialog = true },
+                        onManualWeekClick = { showManualWeekDialog = true },
+                        onFirstDayOfWeekClick = { showFirstDayOfWeekDialog = true },
+                        onQuickActionsClick = { navController.navigate(Screen.QuickActions.route) }
+                    )
+                }
+                item {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp,horizontal = 16.dp),
+                        thickness = 1.dp, // 设置分隔线的厚度
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+                item {
+                    // 高级功能卡片
+                    AdvancedSettingsSection(navController)
+                }
+            }
+
+            if (showDatePickerModal) {
+                DatePickerModal(
+                    onDateSelected = { selectedDateMillis ->
+                        viewModel.onSemesterStartDateSelected(selectedDateMillis)
+                    },
+                    onDismiss = { showDatePickerModal = false }
                 )
             }
-            item {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 4.dp,horizontal = 16.dp),
-                    thickness = 1.dp, // 设置分隔线的厚度
-                    color = MaterialTheme.colorScheme.outlineVariant
+
+            if (showTotalWeeksDialog) {
+                NumberPickerDialog(
+                    title = stringResource(R.string.dialog_title_select_total_weeks),
+                    range = 1..30,
+                    initialValue = semesterTotalWeeks,
+                    onDismiss = { showTotalWeeksDialog = false },
+                    onConfirm = { selectedWeeks ->
+                        viewModel.onSemesterTotalWeeksSelected(selectedWeeks)
+                        showTotalWeeksDialog = false
+                    }
                 )
             }
-            item {
-                // 高级功能卡片
-                AdvancedSettingsSection(navController)
+
+            if (showManualWeekDialog) {
+                ManualWeekPickerDialog(
+                    totalWeeks = semesterTotalWeeks,
+                    currentWeek = displayCurrentWeek,
+                    onDismiss = { showManualWeekDialog = false },
+                    onConfirm = { weekNumber ->
+                        viewModel.onCurrentWeekManuallySet(weekNumber)
+                        showManualWeekDialog = false
+                    }
+                )
+            }
+
+            if (showFirstDayOfWeekDialog) {
+                DayOfWeekPickerDialog(
+                    initialDayOfWeekInt = firstDayOfWeekInt,
+                    onDismiss = { showFirstDayOfWeekDialog = false },
+                    onConfirm = { selectedDayInt ->
+                        viewModel.onFirstDayOfWeekSelected(selectedDayInt)
+                        showFirstDayOfWeekDialog = false
+                    }
+                )
             }
         }
-    }
-
-    if (showDatePickerModal) {
-        DatePickerModal(
-            onDateSelected = { selectedDateMillis ->
-                viewModel.onSemesterStartDateSelected(selectedDateMillis)
-            },
-            onDismiss = { showDatePickerModal = false }
-        )
-    }
-
-    if (showTotalWeeksDialog) {
-        NumberPickerDialog(
-            title = stringResource(R.string.dialog_title_select_total_weeks),
-            range = 1..30,
-            initialValue = semesterTotalWeeks,
-            onDismiss = { showTotalWeeksDialog = false },
-            onConfirm = { selectedWeeks ->
-                viewModel.onSemesterTotalWeeksSelected(selectedWeeks)
-                showTotalWeeksDialog = false
-            }
-        )
-    }
-
-    if (showManualWeekDialog) {
-        ManualWeekPickerDialog(
-            totalWeeks = semesterTotalWeeks,
-            currentWeek = displayCurrentWeek,
-            onDismiss = { showManualWeekDialog = false },
-            onConfirm = { weekNumber ->
-                viewModel.onCurrentWeekManuallySet(weekNumber)
-                showManualWeekDialog = false
-            }
-        )
-    }
-
-    if (showFirstDayOfWeekDialog) {
-        DayOfWeekPickerDialog(
-            initialDayOfWeekInt = firstDayOfWeekInt,
-            onDismiss = { showFirstDayOfWeekDialog = false },
-            onConfirm = { selectedDayInt ->
-                viewModel.onFirstDayOfWeekSelected(selectedDayInt)
-                showFirstDayOfWeekDialog = false
-            }
-        )
     }
 }
 
@@ -192,6 +203,8 @@ fun SettingsScreen(
  */
 @Composable
 private fun GeneralSettingsSection(
+    showNonCurrentWeek: Boolean,
+    onShowNonCurrentWeekChanged: (Boolean) -> Unit,
     showWeekends: Boolean,
     onShowWeekendsChanged: (Boolean) -> Unit,
     semesterStartDate: LocalDate?,
@@ -217,6 +230,14 @@ private fun GeneralSettingsSection(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
+
+            // 是否显示非本周课程开关
+            SettingItem(
+                title = stringResource(R.string.item_show_non_current_week),
+                subtitle = stringResource(R.string.desc_show_non_current_week)
+            ) {
+                Switch(checked = showNonCurrentWeek, onCheckedChange = onShowNonCurrentWeekChanged)
+            }
 
             // 显示周末设置项
             SettingItem(

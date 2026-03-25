@@ -68,8 +68,8 @@
     <string name="course_time_description">时间: 第%1$s-%2$s节 (%3$s-%4$s)</string>
     <string name="course_position_prefix">地点: %1$s</string>
     <string name="course_teacher_prefix">老师: %1$s</string>
-    <string name="title_course_conflict">课程冲突</string>
-    <string name="label_conflict">（冲突）</string>
+    <string name="title_course_overlap">重叠课程列表</string>
+    <string name="label_overlap">（重叠）</string>
     <string name="course_time_sections_count">(%1$s节)</string>
     <string name="title_select_week">选择周次</string>
     <string name="title_current_week">第 %1$s 周</string>
@@ -179,6 +179,8 @@
     <!-- 设置选项 -->
     <string name="title_schedule_settings">课程表设置</string>
     <string name="section_title_general_settings">通用设置</string>
+    <string name="item_show_non_current_week">显示非本周课程</string>
+    <string name="desc_show_non_current_week">在课表中展示当前周次以外的课程</string>
     <string name="item_show_weekends">是否显示周末</string>
     <string name="desc_show_weekends">开启后，课程表中将显示周末的课程安排</string>
     <string name="item_set_start_date">设置开学日期</string>
@@ -465,7 +467,7 @@
     <string name="label_opacity">不透明度</string>
     <string name="title_light_color_pool">浅色模式颜色池</string>
     <string name="title_dark_color_pool">深色模式颜色池</string>
-    <string name="label_color_conflict">冲突</string>
+    <string name="label_color_overlap">重叠</string>
     <string name="preview_light_mode">浅色模式预览\n固定深色文字</string>
     <string name="preview_dark_mode">深色模式预览\n固定浅色文字</string>
     <string name="action_reset_style">恢复默认样式设置</string>

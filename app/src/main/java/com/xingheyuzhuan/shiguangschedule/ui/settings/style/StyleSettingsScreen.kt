@@ -189,7 +189,7 @@ fun StyleSettingsScreen(
             if (showColorPicker) {
                 ModalBottomSheet(onDismissRequest = { showColorPicker = false }, sheetState = sheetState) {
                     val initialColor = if (pickingCategory == 1) {
-                        if (isDarkTarget) currentStyle.conflictCourseColorDark else currentStyle.conflictCourseColor
+                        if (isDarkTarget) currentStyle.overlapCourseColorDark else currentStyle.overlapCourseColor
                     } else {
                         val pair = currentStyle.courseColorMaps.getOrNull(selectedColorIndex)
                         if (isDarkTarget) pair?.dark ?: Color.Gray else pair?.light ?: Color.Gray
@@ -203,7 +203,7 @@ fun StyleSettingsScreen(
                         onColorChanged = { newColor ->
                             currentColorInPicker = newColor
                             if (pickingCategory == 1) {
-                                viewModel.updateConflictColor(newColor, isDarkTarget)
+                                viewModel.updateOverlapColor(newColor, isDarkTarget)
                             } else {
                                 viewModel.updatePrimaryColor(selectedColorIndex, newColor, isDarkTarget)
                             }
@@ -300,7 +300,7 @@ private fun SettingsListContent(
             bgColor = lightColorScheme().surfaceContainerLow,
             isDarkSection = false,
             colors = currentStyle.courseColorMaps.map { it.light },
-            conflictColor = currentStyle.conflictCourseColor,
+            conflictColor = currentStyle.overlapCourseColor,
             onEditColor = { onPick(0, false, it) },
             onEditConflict = { onPick(1, false, 0) }
         )
@@ -310,7 +310,7 @@ private fun SettingsListContent(
             bgColor = darkColorScheme().surfaceContainerLow,
             isDarkSection = true,
             colors = currentStyle.courseColorMaps.map { it.dark },
-            conflictColor = currentStyle.conflictCourseColorDark,
+            conflictColor = currentStyle.overlapCourseColorDark,
             onEditColor = { onPick(0, true, it) },
             onEditConflict = { onPick(1, true, 0) }
         )
@@ -336,7 +336,7 @@ private fun ColorSchemeSection(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(conflictColor).border(2.dp, contentColor.copy(0.3f), CircleShape).clickable { onEditConflict() })
-                Text(stringResource(R.string.label_color_conflict), style = MaterialTheme.typography.labelSmall, color = contentColor.copy(0.6f), modifier = Modifier.padding(top = 4.dp))
+                Text(stringResource(R.string.label_color_overlap), style = MaterialTheme.typography.labelSmall, color = contentColor.copy(0.6f), modifier = Modifier.padding(top = 4.dp))
             }
 
             VerticalDivider(modifier = Modifier.height(40.dp).padding(horizontal = 12.dp), color = contentColor.copy(0.1f))

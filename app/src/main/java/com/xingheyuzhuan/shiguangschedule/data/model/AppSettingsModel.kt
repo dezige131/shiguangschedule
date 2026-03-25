@@ -1,5 +1,6 @@
 package com.xingheyuzhuan.shiguangschedule.data.model
 
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -52,7 +53,11 @@ data class AppSettingsModel(
      * true: 开启兼容模式（关闭 Ongoing，方便手环抓取）
      * false: 关闭兼容模式（默认，使用 Android 16 实时更新特性）
      */
-    val compatWearableSync: Boolean = false // 默认为关闭
+    val compatWearableSync: Boolean = false,
+
+    /** 是否显示非本周课程 */
+    val showNonCurrentWeekCourses: Boolean = false
+
 ) {
     /**
      * 将 DataStore 的 Key 定义在伴生对象中。
@@ -67,5 +72,23 @@ data class AppSettingsModel(
         val KEY_AUTO_MODE_ENABLED = booleanPreferencesKey("auto_mode_enabled")
         val KEY_AUTO_CONTROL_MODE = stringPreferencesKey("auto_control_mode")
         val KEY_COMPAT_WEARABLE_SYNC = booleanPreferencesKey("compat_wearable_sync")
+        val KEY_SHOW_NON_CURRENT_WEEK_COURSES = booleanPreferencesKey("show_non_current_week_courses")
+
+        /**
+         * 从 Preferences 中解析出 AppSettingsModel
+         */
+        fun fromPreferences(prefs: Preferences, fallbackTableId: String): AppSettingsModel {
+            val d = AppSettingsModel() // 默认值模板
+            return AppSettingsModel(
+                currentCourseTableId = prefs[KEY_CURRENT_COURSE_TABLE_ID] ?: fallbackTableId.ifEmpty { d.currentCourseTableId },
+                reminderEnabled = prefs[KEY_REMINDER_ENABLED] ?: d.reminderEnabled,
+                remindBeforeMinutes = prefs[KEY_REMIND_BEFORE_MINUTES] ?: d.remindBeforeMinutes,
+                skippedDates = prefs[KEY_SKIPPED_DATES] ?: d.skippedDates,
+                autoModeEnabled = prefs[KEY_AUTO_MODE_ENABLED] ?: d.autoModeEnabled,
+                autoControlMode = AutoControlMode.fromString(prefs[KEY_AUTO_CONTROL_MODE]),
+                compatWearableSync = prefs[KEY_COMPAT_WEARABLE_SYNC] ?: d.compatWearableSync,
+                showNonCurrentWeekCourses = prefs[KEY_SHOW_NON_CURRENT_WEEK_COURSES] ?: d.showNonCurrentWeekCourses
+            )
+        }
     }
 }

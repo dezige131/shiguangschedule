@@ -30,8 +30,8 @@ data class ScheduleGridStyleComposed(
     val fontScale: Float,
 
     // 颜色 (Color)
-    val conflictCourseColor: Color,
-    val conflictCourseColorDark: Color,
+    val overlapCourseColor: Color,
+    val overlapCourseColorDark: Color,
     val courseColorMaps: List<DualColor>,
 
     // UI 渲染开关
@@ -57,8 +57,8 @@ data class ScheduleGridStyleComposed(
                 courseBlockOuterPadding = this.courseBlockOuterPaddingDp.dp,
                 courseBlockInnerPadding = this.courseBlockInnerPaddingDp.dp,
                 courseBlockAlpha = this.courseBlockAlphaFloat,
-                conflictCourseColor = Color(this.conflictCourseColorLong.toInt()),
-                conflictCourseColorDark = Color(this.conflictCourseColorDarkLong.toInt()),
+                overlapCourseColor = Color(this.overlapCourseColorLong.toInt()),
+                overlapCourseColorDark = Color(this.overlapCourseColorDarkLong.toInt()),
                 fontScale = this.courseBlockFontScale,
                 courseColorMaps = this.courseColorMaps.map { dual ->
                     DualColor(

@@ -7,7 +7,6 @@ import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableConfig
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableConfigDao
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseTableDao
 import com.xingheyuzhuan.shiguangschedule.data.model.AppSettingsModel
-import com.xingheyuzhuan.shiguangschedule.data.model.AutoControlMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -53,30 +52,17 @@ class AppSettingsRepository @Inject constructor(
 
     /**
      * 获取应用设置数据流。
-     * 内部实现了 DataStore 到业务模型的映射，并包含“保底课表 ID”获取逻辑。
      */
     fun getAppSettings(): Flow<AppSettingsModel> = dataStore.data.map { prefs ->
-        val tableId = prefs[AppSettingsModel.KEY_CURRENT_COURSE_TABLE_ID]
-            ?: courseTableDao.getFirstTableOnce()?.id
-            ?: ""
+        val dbFirstTableId = courseTableDao.getFirstTableOnce()?.id ?: ""
 
-        AppSettingsModel(
-            currentCourseTableId = tableId,
-            reminderEnabled = prefs[AppSettingsModel.KEY_REMINDER_ENABLED] ?: false,
-            remindBeforeMinutes = prefs[AppSettingsModel.KEY_REMIND_BEFORE_MINUTES] ?: 15,
-            skippedDates = prefs[AppSettingsModel.KEY_SKIPPED_DATES] ?: emptySet(),
-            autoModeEnabled = prefs[AppSettingsModel.KEY_AUTO_MODE_ENABLED] ?: false,
-            autoControlMode = AutoControlMode.fromString(
-                prefs[AppSettingsModel.KEY_AUTO_CONTROL_MODE]
-            ),
-            compatWearableSync = prefs[AppSettingsModel.KEY_COMPAT_WEARABLE_SYNC] ?: false
-        )
+        AppSettingsModel.fromPreferences(prefs, dbFirstTableId)
     }
 
     /**
      * 获取一次性的应用设置快照。
      */
-    suspend fun getAppSettingsOnce(): AppSettingsModel? {
+    suspend fun getAppSettingsOnce(): AppSettingsModel {
         return getAppSettings().first()
     }
 
@@ -93,6 +79,7 @@ class AppSettingsRepository @Inject constructor(
             prefs[AppSettingsModel.KEY_AUTO_MODE_ENABLED] = newSettings.autoModeEnabled
             prefs[AppSettingsModel.KEY_AUTO_CONTROL_MODE] = newSettings.autoControlMode.value
             prefs[AppSettingsModel.KEY_COMPAT_WEARABLE_SYNC] = newSettings.compatWearableSync
+            prefs[AppSettingsModel.KEY_SHOW_NON_CURRENT_WEEK_COURSES] = newSettings.showNonCurrentWeekCourses
         }
     }
 
