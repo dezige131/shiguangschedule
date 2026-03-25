@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.gradle.license)
+    alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.protobuf)
     alias(libs.plugins.hilt.android)
 }
@@ -110,16 +110,11 @@ android {
         localeFilters += listOf("zh", "zh-rCN", "zh-rTW", "en")
     }
 }
-
-afterEvaluate {
-    tasks.named("assembleProdRelease") {
-        dependsOn("licenseProdReleaseReport")
-    }
-    tasks.named("assembleDevRelease") {
-        dependsOn("licenseDevReleaseReport")
+aboutLibraries {
+    collect {
+        includePlatform = true
     }
 }
-
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.compose.material.icons.extended)
@@ -155,6 +150,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
+    implementation(libs.aboutlibraries.compose)
     ksp(libs.androidx.hilt.compiler)
 
     testImplementation(libs.junit)

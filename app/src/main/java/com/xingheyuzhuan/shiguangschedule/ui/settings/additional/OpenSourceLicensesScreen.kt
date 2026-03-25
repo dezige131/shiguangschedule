@@ -1,29 +1,26 @@
 package com.xingheyuzhuan.shiguangschedule.ui.settings.additional
 
-import android.annotation.SuppressLint
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
+import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.xingheyuzhuan.shiguangschedule.R
 
-@SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenSourceLicensesScreen(navController: NavController) {
+
+
+    val libraries by produceLibraries()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -41,17 +38,11 @@ fun OpenSourceLicensesScreen(navController: NavController) {
             )
         }
     ) { innerPadding ->
-        AndroidView(
+        LibrariesContainer(
+            libraries = libraries,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            factory = { context ->
-                WebView(context).apply {
-                    settings.javaScriptEnabled = true
-                    webViewClient = WebViewClient()
-                    loadUrl("file:///android_asset/open_source_licenses.html")
-                }
-            }
+                .padding(innerPadding)
         )
     }
 }
