@@ -42,7 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.navigateSafe
@@ -69,7 +69,7 @@ fun AdapterSelectionScreen(
     schoolName: String,
     categoryNumber: Int,
     resourceFolder: String,
-    viewModel: SchoolSelectionViewModel = viewModel()
+    viewModel: SchoolSelectionViewModel = hiltViewModel()
 ) {
     // 异步加载状态
     var adapters by remember { mutableStateOf<List<Adapter>>(emptyList()) }

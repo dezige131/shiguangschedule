@@ -1,7 +1,13 @@
 package com.xingheyuzhuan.shiguangschedule.data.repository
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import com.xingheyuzhuan.shiguangschedule.data.model.SchoolHistoryModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -9,6 +15,9 @@ import school_index.Adapter
 import school_index.AdapterCategory
 import school_index.School
 import school_index.SchoolIndex
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
 
 object SchoolRepository {
 
@@ -90,6 +99,48 @@ object SchoolRepository {
             val index = loadIndex(context)
             // 查找对应的学校
             return@withContext index?.schoolsList?.find { it.id == id }
+        }
+    }
+}
+
+
+
+/**
+ * 用户记录仓库
+ * 负责读写用户在 DataStore 中的学校选择历史。
+ */
+@Singleton
+class SchoolHistoryRepository @Inject constructor(
+    @Named("SchoolHistory") private val dataStore: DataStore<Preferences>
+) {
+    /**
+     * 获取学校选择历史的数据流
+     */
+    val historyFlow: Flow<SchoolHistoryModel> = dataStore.data.map { prefs ->
+        SchoolHistoryModel.fromPreferences(prefs)
+    }
+
+    /**
+     * 保存上次选择的学校
+     */
+    suspend fun saveLastSchool(category: AdapterCategory, school: School) {
+        dataStore.edit { prefs ->
+            val keys = SchoolHistoryModel.getKeysForCategory(category)
+            prefs[keys.first] = school.id
+            prefs[keys.second] = school.name
+            prefs[keys.third] = school.resourceFolder
+        }
+    }
+
+    /**
+     * 清除指定类别的历史记录
+     */
+    suspend fun clearHistory(category: AdapterCategory) {
+        dataStore.edit { prefs ->
+            val keys = SchoolHistoryModel.getKeysForCategory(category)
+            prefs.remove(keys.first)
+            prefs.remove(keys.second)
+            prefs.remove(keys.third)
         }
     }
 }

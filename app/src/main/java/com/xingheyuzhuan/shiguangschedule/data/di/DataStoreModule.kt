@@ -19,10 +19,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Named
 import javax.inject.Singleton
 
 // 定义 AppSettings Preferences DataStore 委托
 private val Context.appSettingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
+// 定义 SchoolHistory Preferences DataStore 委托
+private val Context.schoolHistoryDataStore: DataStore<Preferences> by preferencesDataStore(name = "school_history")
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,7 +41,15 @@ object DataStoreModule {
         return context.scheduleGridStyleDataStore
     }
 
-
+    /**
+     * 提供学校选择历史 DataStore
+     */
+    @Provides
+    @Singleton
+    @Named("SchoolHistory")
+    fun provideSchoolHistoryDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+        return context.schoolHistoryDataStore
+    }
 
     /**
      * 提供全局设置 DataStore，并集成从 Room 到 DataStore 的单次自动迁移逻辑。
@@ -48,6 +59,7 @@ object DataStoreModule {
      */
     @Provides
     @Singleton
+    @Named("AppSettings")
     fun provideAppSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
         val dataStore = context.appSettingsDataStore
 

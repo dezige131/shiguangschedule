@@ -23,6 +23,7 @@
     <string name="common_dialog_msg_unsaved_changes">当前内容已修改，退出将丢失未保存的数据。</string>
     <string name="common_action_exit_without_save">退出</string>
     <string name="common_action_continue_editing">继续编辑</string>
+    <string name="label_recent_visit">最近访问</string>
     
     <!-- 主界面及今日课表 -->
     <string name="nav_today_schedule">今日课表</string>

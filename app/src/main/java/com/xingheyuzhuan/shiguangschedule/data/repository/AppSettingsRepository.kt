@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -28,7 +29,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppSettingsRepository @Inject constructor(
-    private val dataStore: DataStore<Preferences>,
+    @Named("AppSettings") private val dataStore: DataStore<Preferences>,
     private val courseTableDao: CourseTableDao,
     private val courseTableConfigDao: CourseTableConfigDao
 ) {

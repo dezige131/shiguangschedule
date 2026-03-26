@@ -23,6 +23,7 @@
     <string name="common_dialog_msg_unsaved_changes">You have unsaved changes. Are you sure you want to exit and lose them?</string>
     <string name="common_action_exit_without_save">Exit</string>
     <string name="common_action_continue_editing">Keep editing</string>
+    <string name="label_recent_visit">Recent Visit</string>
     
     <!-- Main Interface and Today's Schedule -->
     <string name="nav_today_schedule">Today</string>

@@ -1,9 +1,16 @@
 package com.xingheyuzhuan.shiguangschedule.ui.schoolselection.list
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -12,8 +19,28 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,13 +48,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.Screen
+import com.xingheyuzhuan.shiguangschedule.data.model.SchoolHistoryModel
 import com.xingheyuzhuan.shiguangschedule.navigateSafe
-import kotlinx.coroutines.CoroutineScope
+import com.xingheyuzhuan.shiguangschedule.ui.components.AlphabetIndexerList
 import kotlinx.coroutines.launch
 import school_index.AdapterCategory
 import school_index.School
@@ -35,28 +62,25 @@ import school_index.School
 /**
  * 主学校选择屏幕，现在通过 ViewModel 管理状态和数据获取。
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SchoolSelectionListScreen(
     navController: NavController,
-    // 注入 ViewModel
-    viewModel: SchoolSelectionViewModel = viewModel()
+    viewModel: SchoolSelectionViewModel = hiltViewModel()
 ) {
     // 观察 ViewModel 状态
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val filteredSchools by viewModel.filteredSchools.collectAsState()
-    val initials by viewModel.initials.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val schoolHistory by viewModel.schoolHistory.collectAsState()
 
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-
     var isSearchActive by remember { mutableStateOf(false) }
 
     val titleText = stringResource(R.string.title_select_school)
     val placeholderText = stringResource(R.string.search_hint_school)
-
 
     Scaffold(
         topBar = {
@@ -75,6 +99,7 @@ fun SchoolSelectionListScreen(
                 titleText = titleText,
                 filteredSchools = filteredSchools,
             ) { selectedSchool ->
+                viewModel.saveLastSchool(selectedSchool)
                 navController.navigateSafe(
                     Screen.AdapterSelection.createRoute(
                         selectedSchool.id,
@@ -94,7 +119,6 @@ fun SchoolSelectionListScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // 类别选择器
                 CategoryTabs(
                     selectedCategory = selectedCategory,
                     onCategorySelected = { category ->
@@ -104,20 +128,20 @@ fun SchoolSelectionListScreen(
                     displayCategories = viewModel.displayCategories
                 )
 
-                // 加载/空状态/列表内容
                 SchoolContent(
                     isLoading = isLoading,
                     filteredSchools = filteredSchools,
-                    initials = initials,
                     lazyListState = lazyListState,
-                    coroutineScope = coroutineScope,
-                    selectedCategoryNumber = selectedCategory.number,
-                    onSchoolSelected = { school, categoryNumber ->
+                    selectedCategory = selectedCategory,
+                    schoolHistory = schoolHistory,
+                    onClearHistory = { viewModel.clearHistory(it) },
+                    onSchoolSelected = { school, category ->
+                        viewModel.saveLastSchool(school)
                         navController.navigateSafe(
                             Screen.AdapterSelection.createRoute(
                                 school.id,
                                 school.name,
-                                categoryNumber,
+                                category.number,
                                 school.resourceFolder
                             )
                         )
@@ -125,7 +149,6 @@ fun SchoolSelectionListScreen(
                 )
             }
         } else {
-            // 搜索激活状态下，让 SearchBar 处理其内部内容
             Spacer(modifier = Modifier.padding(paddingValues))
         }
     }
@@ -134,31 +157,31 @@ fun SchoolSelectionListScreen(
 /**
  * 集中管理加载状态和列表显示。
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SchoolContent(
     isLoading: Boolean,
     filteredSchools: List<School>,
-    initials: List<String>,
     lazyListState: LazyListState,
-    coroutineScope: CoroutineScope,
-    selectedCategoryNumber: Int,
-    onSchoolSelected: (School, Int) -> Unit
+    selectedCategory: AdapterCategory,
+    schoolHistory: SchoolHistoryModel,
+    onClearHistory: (AdapterCategory) -> Unit,
+    onSchoolSelected: (School, AdapterCategory) -> Unit
 ) {
+    val recentRecord = when (selectedCategory) {
+        AdapterCategory.BACHELOR_AND_ASSOCIATE -> schoolHistory.bachelor
+        AdapterCategory.POSTGRADUATE -> schoolHistory.postgraduate
+        AdapterCategory.GENERAL_TOOL -> schoolHistory.general
+        else -> null
+    }
+
     when {
         isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
         filteredSchools.isEmpty() && !isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.text_no_adapter_for_category),
                     style = MaterialTheme.typography.titleMedium,
@@ -169,45 +192,51 @@ private fun SchoolContent(
             }
         }
         else -> {
-            Row(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    var currentInitial = ""
-                    filteredSchools.forEach { school ->
-                        val initial = school.initial.uppercase()
-                        if (initial != currentInitial) {
-                            stickyHeader {
-                                Text(
-                                    text = initial,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+            AlphabetIndexerList(
+                data = filteredSchools,
+                getInitial = { it.initial },
+                lazyListState = lazyListState,
+                headerContent = {
+                    if (recentRecord != null && !recentRecord.isEmpty) {
+                        Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+                            Text(
+                                text = stringResource(R.string.label_recent_visit),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 4.dp)
+                            )
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                SchoolItem(
+                                    school = recentRecord.toSchool(),
+                                    onClick = { onSchoolSelected(it, selectedCategory) }
                                 )
+                                IconButton(
+                                    onClick = { onClearHistory(selectedCategory) },
+                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.a11y_delete),
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.outline
+                                    )
+                                }
                             }
-                            currentInitial = initial
-                        }
-                        item {
-                            // 调用 onSchoolSelected 时传入 school 和 selectedCategoryNumber
-                            SchoolItem(school = school, onClick = { onSchoolSelected(it, selectedCategoryNumber) })
+                            HorizontalDivider(
+                                modifier = Modifier.padding(top = 12.dp, start = 8.dp, end = 8.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
                         }
                     }
                 }
-                AlphabetIndex(
-                    initials = initials,
-                    lazyListState = lazyListState,
-                    coroutineScope = coroutineScope,
-                    filteredSchools = filteredSchools
-                )
+            ) { school ->
+                Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) {
+                    SchoolItem(
+                        school = school,
+                        onClick = { onSchoolSelected(it, selectedCategory) }
+                    )
+                }
             }
         }
     }
@@ -274,7 +303,7 @@ fun SearchBarWithTitle(
     placeholderText: String,
     titleText: String,
     filteredSchools: List<School>,
-    onSchoolSelected: (School) -> Unit // 注意: 这个回调只在 SearchBar 内部使用，它通过 lambda 捕获了 selectedCategory.number
+    onSchoolSelected: (School) -> Unit
 ) {
     SearchBar(
         modifier = Modifier.fillMaxWidth(),
@@ -325,10 +354,7 @@ fun SearchBarWithTitle(
     ) {
         // 搜索结果内容
         if (filteredSchools.isEmpty() && searchQuery.isNotBlank()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.text_no_school_found), style = MaterialTheme.typography.bodyLarge)
             }
         } else {
@@ -348,7 +374,7 @@ fun SearchBarWithTitle(
 }
 
 /**
- * 学校列表项，已移除 maintainer 字段显示。
+ * 学校列表项
  */
 @Composable
 fun SchoolItem(school: School, onClick: (School) -> Unit) {
@@ -374,82 +400,13 @@ fun SchoolItem(school: School, onClick: (School) -> Unit) {
                     .padding(end = 8.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = school.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-    }
-}
-
-/**
- * 字母索引条。
- */
-@Composable
-fun AlphabetIndex(
-    initials: List<String>,
-    lazyListState: LazyListState,
-    coroutineScope: CoroutineScope,
-    filteredSchools: List<School> // Protobuf School
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .width(28.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.7f))
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
-    ) {
-        initials.forEachIndexed { index, initial ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clickable {
-                        val targetInitial = initials[index]
-                        scrollToInitial(
-                            targetInitial,
-                            lazyListState,
-                            coroutineScope,
-                            filteredSchools
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-/**
- * 滚动到指定首字母的第一个学校项目。
- */
-private fun scrollToInitial(
-    targetInitial: String,
-    lazyListState: LazyListState,
-    coroutineScope: CoroutineScope,
-    filteredSchools: List<School>
-) {
-    coroutineScope.launch {
-        // 查找目标首字母在列表中的第一个学校索引
-        val itemIndex = filteredSchools.indexOfFirst {
-            it.initial.uppercase() == targetInitial
-        }
-
-        if (itemIndex != -1) {
-            lazyListState.animateScrollToItem(itemIndex)
         }
     }
 }
