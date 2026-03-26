@@ -478,6 +478,13 @@
     <string name="dialog_reset_title">Reset Style</string>
     <string name="dialog_reset_message">Are you sure you want to reset all style settings to default? This action cannot be undone.</string>
     <string name="action_confirm_crop">Confirm Crop</string>
+    <string name="label_text_align_center_h">Horizontal Center</string>
+    <string name="label_text_align_center_v">Vertical Center</string>
+    <string name="label_border_type">Border Style</string>
+    <string name="border_type_solid">Solid</string>
+    <string name="border_type_dashed">Dashed</string>
+    <string name="label_range">Range</string>
+    <string name="placeholder_input_value">Enter value</string>
 
     <!-- Quick Actions -->
     <string name="item_quick_actions">Quick Actions</string>

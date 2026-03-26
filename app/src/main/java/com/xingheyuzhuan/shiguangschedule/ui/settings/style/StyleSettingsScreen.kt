@@ -81,12 +81,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.xingheyuzhuan.shiguangschedule.R
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 import com.xingheyuzhuan.shiguangschedule.ui.components.AdvancedColorPicker
 import com.xingheyuzhuan.shiguangschedule.ui.components.ColorPickerConfig
 import com.xingheyuzhuan.shiguangschedule.ui.components.ImageCropper
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.WeeklyScheduleUiState
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGrid
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.components.ScheduleGridStyleComposed
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,6 +276,7 @@ private fun SettingsListContent(
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
         Text(stringResource(R.string.style_category_grid_size), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        // 尺寸类全部使用默认的 1f 步长（整数吸附）
         StyleSliderItem(stringResource(R.string.label_section_height), currentStyle.sectionHeight.value, 40f..120f) { viewModel.updateSectionHeight(it) }
         StyleSliderItem(stringResource(R.string.label_time_column_width), currentStyle.timeColumnWidth.value, 20f..80f) { viewModel.updateTimeColumnWidth(it) }
         StyleSliderItem(stringResource(R.string.label_day_header_height), currentStyle.dayHeaderHeight.value, 30f..80f) { viewModel.updateDayHeaderHeight(it) }
@@ -285,11 +288,18 @@ private fun SettingsListContent(
         StyleSwitchItem(stringResource(R.string.label_hide_location), currentStyle.hideLocation) { viewModel.updateHideLocation(it) }
         StyleSwitchItem(stringResource(R.string.label_hide_teacher), currentStyle.hideTeacher) { viewModel.updateHideTeacher(it) }
         StyleSwitchItem(stringResource(R.string.label_remove_location_at), currentStyle.removeLocationAt) { viewModel.updateRemoveLocationAt(it) }
-        StyleSliderItem(stringResource(R.string.label_font_scale), currentStyle.fontScale, 0.5f..2.0f) { viewModel.updateCourseBlockFontScale(it) }
-        StyleSliderItem(stringResource(R.string.label_corner_radius), currentStyle.courseBlockCornerRadius.value, 0f..24f) { viewModel.updateCornerRadius(it) }
-        StyleSliderItem(stringResource(R.string.label_inner_padding), currentStyle.courseBlockInnerPadding.value, 0f..12f) { viewModel.updateInnerPadding(it) }
-        StyleSliderItem(stringResource(R.string.label_outer_padding), currentStyle.courseBlockOuterPadding.value, 0f..8f) { viewModel.updateOuterPadding(it) }
-        StyleSliderItem(stringResource(R.string.label_opacity), currentStyle.courseBlockAlpha, 0.1f..1f) { viewModel.updateAlpha(it) }
+        StyleSwitchItem(stringResource(R.string.label_text_align_center_h), currentStyle.textAlignCenterHorizontal) { viewModel.updateTextAlignCenterHorizontal(it) }
+        StyleSwitchItem(stringResource(R.string.label_text_align_center_v), currentStyle.textAlignCenterVertical) { viewModel.updateTextAlignCenterVertical(it) }
+        BorderTypeSelector(currentStyle.borderType) { viewModel.updateBorderType(it) }
+
+        // 字体缩放使用 0.1 步长
+        StyleSliderItem(stringResource(R.string.label_font_scale), currentStyle.fontScale, 0.5f..2.0f, 0.1f) { viewModel.updateCourseBlockFontScale(it) }
+        // 圆角和边距使用 1f 步长（整数）
+        StyleSliderItem(stringResource(R.string.label_corner_radius), currentStyle.courseBlockCornerRadius.value, 0f..24f, 1f) { viewModel.updateCornerRadius(it) }
+        StyleSliderItem(stringResource(R.string.label_inner_padding), currentStyle.courseBlockInnerPadding.value, 0f..12f, 1f) { viewModel.updateInnerPadding(it) }
+        StyleSliderItem(stringResource(R.string.label_outer_padding), currentStyle.courseBlockOuterPadding.value, 0f..8f, 1f) { viewModel.updateOuterPadding(it) }
+        // 透明度使用 0.05 步长
+        StyleSliderItem(stringResource(R.string.label_opacity), currentStyle.courseBlockAlpha, 0.1f..1f, 0.05f) { viewModel.updateAlpha(it) }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
@@ -314,6 +324,43 @@ private fun SettingsListContent(
             onEditColor = { onPick(0, true, it) },
             onEditConflict = { onPick(1, true, 0) }
         )
+    }
+}
+
+@Composable
+private fun BorderTypeSelector(
+    currentType: BorderTypeProto,
+    onTypeChange: (BorderTypeProto) -> Unit
+) {
+    val types = listOf(
+        BorderTypeProto.BORDER_TYPE_NONE to stringResource(R.string.label_none),
+        BorderTypeProto.BORDER_TYPE_SOLID to stringResource(R.string.border_type_solid),
+        BorderTypeProto.BORDER_TYPE_DASHED to stringResource(R.string.border_type_dashed)
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.label_border_type), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            types.forEach { (type, label) ->
+                val isSelected = currentType == type
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                        .clickable { onTypeChange(type) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -415,8 +462,79 @@ private fun StyleSliderItem(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
+    stepValue: Float = 1f,
     onValueChange: (Float) -> Unit
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+    val isIntegerStep = stepValue >= 1f
+
+    // 定义格式化辅助函数
+    fun formatValue(v: Float): String = if (isIntegerStep) "${v.toInt()}" else "%.1f".format(v)
+
+    val steps = remember(range, stepValue) {
+        if (stepValue > 0f) {
+            ((range.endInclusive - range.start) / stepValue).toInt() - 1
+        } else 0
+    }
+
+    if (showDialog) {
+        var textFieldValue by remember { mutableStateOf(formatValue(value)) }
+
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(label) },
+            text = {
+                Column {
+                    Text(
+                        text = "${stringResource(R.string.label_range)}: ${formatValue(range.start)} - ${formatValue(range.endInclusive)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    androidx.compose.material3.OutlinedTextField(
+                        value = textFieldValue,
+                        onValueChange = { input ->
+                            // 如果是整数步长，只允许数字；否则允许数字和小数点
+                            if (isIntegerStep) {
+                                if (input.all { it.isDigit() }) textFieldValue = input
+                            } else {
+                                if (input.all { it.isDigit() || it == '.' }) textFieldValue = input
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = if (isIntegerStep) androidx.compose.ui.text.input.KeyboardType.Number
+                            else androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                        placeholder = { Text(stringResource(R.string.placeholder_input_value)) }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newValue = textFieldValue.toFloatOrNull()
+                    if (newValue != null) {
+                        val clampedValue = newValue.coerceIn(range.start, range.endInclusive)
+                        val steppedValue = if (stepValue > 0f) {
+                            val count = ((clampedValue - range.start) / stepValue).roundToInt()
+                            range.start + count * stepValue
+                        } else clampedValue
+
+                        onValueChange(steppedValue)
+                        showDialog = false
+                    }
+                }) {
+                    Text(stringResource(R.string.action_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -424,16 +542,25 @@ private fun StyleSliderItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = if (value < 100f && value > 0.01f) "%.2f".format(value) else "${value.toInt()}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { showDialog = true }
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = formatValue(value),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
+            steps = if (steps > 0) steps else 0,
             modifier = Modifier.height(32.dp),
             thumb = {
                 Surface(

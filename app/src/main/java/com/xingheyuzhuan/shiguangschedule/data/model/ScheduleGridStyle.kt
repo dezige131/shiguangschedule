@@ -2,6 +2,7 @@ package com.xingheyuzhuan.shiguangschedule.data.model
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.DualColorProto
 import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.ScheduleGridStyleProto
 
@@ -37,6 +38,7 @@ data class ScheduleGridStyle(
 
     val courseBlockFontScale: Float = DEFAULT_FONT_SCALE,
 
+    // 界面开关与布局控制
     val hideGridLines: Boolean = false,
     val hideSectionTime: Boolean = false,
     val hideDateUnderDay: Boolean = false,
@@ -44,6 +46,9 @@ data class ScheduleGridStyle(
     val hideLocation: Boolean = false,
     val hideTeacher: Boolean = false,
     val removeLocationAt: Boolean = false,
+    val textAlignCenterHorizontal: Boolean = false,
+    val textAlignCenterVertical: Boolean = false,
+    val borderType: BorderTypeProto = BorderTypeProto.BORDER_TYPE_NONE,
 
     // 背景壁纸路径 (存储在私有目录下的绝对路径)
     val backgroundImagePath: String? = null
@@ -84,7 +89,6 @@ data class ScheduleGridStyle(
 
         /**
          * 默认样式对象，用于首次启动或重置样式。
-         * 注意：backgroundImagePath 默认为 null，但在 ViewModel 的重置逻辑中会特殊处理以保留壁纸。
          */
         val DEFAULT = ScheduleGridStyle(
             timeColumnWidthDp = DEFAULT_TIME_COLUMN_WIDTH,
@@ -105,6 +109,9 @@ data class ScheduleGridStyle(
             hideLocation = false,
             hideTeacher = false,
             removeLocationAt = false,
+            textAlignCenterHorizontal = false,
+            textAlignCenterVertical = false,
+            borderType = BorderTypeProto.BORDER_TYPE_NONE,
             backgroundImagePath = null
         )
     }
@@ -152,18 +159,25 @@ fun ScheduleGridStyleProto.toCompose(): ScheduleGridStyle {
         overlapCourseColorLong = if (hasOverlapCourseColorLong()) overlapCourseColorLong else d.overlapCourseColorLong,
         overlapCourseColorDarkLong = if (hasOverlapCourseColorDarkLong()) overlapCourseColorDarkLong else d.overlapCourseColorDarkLong,
 
-        // 5. 其他列表和布尔值
+        // 5. 列表转换
         courseColorMaps = if (this.courseColorMapsList.isEmpty()) d.courseColorMaps else this.courseColorMapsList.map { it.toCompose() },
-        hideGridLines = this.hideGridLines,
-        hideSectionTime = this.hideSectionTime,
-        hideDateUnderDay = this.hideDateUnderDay,
-        showStartTime = this.showStartTime,
-        hideLocation = this.hideLocation,
-        hideTeacher = this.hideTeacher,
-        removeLocationAt = this.removeLocationAt,
 
-        // 6. 背景图路径映射 (空字符串转 null)
-        backgroundImagePath = if (this.backgroundImagePath.isNullOrEmpty()) null else this.backgroundImagePath
+        // 6. 开关映射
+        hideGridLines = if (hasHideGridLines()) hideGridLines else d.hideGridLines,
+        hideSectionTime = if (hasHideSectionTime()) hideSectionTime else d.hideSectionTime,
+        hideDateUnderDay = if (hasHideDateUnderDay()) hideDateUnderDay else d.hideDateUnderDay,
+        showStartTime = if (hasShowStartTime()) showStartTime else d.showStartTime,
+        hideLocation = if (hasHideLocation()) hideLocation else d.hideLocation,
+        hideTeacher = if (hasHideTeacher()) hideTeacher else d.hideTeacher,
+        removeLocationAt = if (hasRemoveLocationAt()) removeLocationAt else d.removeLocationAt,
+
+        // 7. 对齐与边框
+        textAlignCenterHorizontal = if (hasTextAlignCenterHorizontal()) textAlignCenterHorizontal else d.textAlignCenterHorizontal,
+        textAlignCenterVertical = if (hasTextAlignCenterVertical()) textAlignCenterVertical else d.textAlignCenterVertical,
+        borderType = if (hasBorderType()) borderType else d.borderType,
+
+        // 8. 背景图路径映射
+        backgroundImagePath = if (hasBackgroundImagePath() && backgroundImagePath.isNotEmpty()) backgroundImagePath else null
     )
 }
 
@@ -192,8 +206,11 @@ fun ScheduleGridStyle.toProto(): ScheduleGridStyleProto {
         hideLocation = this@toProto.hideLocation
         hideTeacher = this@toProto.hideTeacher
         removeLocationAt = this@toProto.removeLocationAt
+        textAlignCenterHorizontal = this@toProto.textAlignCenterHorizontal
+        textAlignCenterVertical = this@toProto.textAlignCenterVertical
+        borderType = this@toProto.borderType
 
-        // 将 null 映射回空字符串写入 Proto
+        // 路径映射
         backgroundImagePath = this@toProto.backgroundImagePath ?: ""
     }.build()
 }

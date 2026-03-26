@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
 import com.xingheyuzhuan.shiguangschedule.data.model.ScheduleGridStyle
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 
 /**
  * 【Presentation Layer Model】
@@ -42,7 +43,11 @@ data class ScheduleGridStyleComposed(
 
     val hideLocation: Boolean,       // 是否隐藏上课地点
     val hideTeacher: Boolean,        // 是否隐藏授课老师
-    val removeLocationAt: Boolean    // 是否移除地点前的 @ 符号
+    val removeLocationAt: Boolean,   // 是否移除地点前的 @ 符号
+
+    val textAlignCenterHorizontal: Boolean, // 文字水平居中
+    val textAlignCenterVertical: Boolean,   // 文字垂直居中
+    val borderType: BorderTypeProto         // 边框类型 (NONE/SOLID/DASHED)
 ) {
     companion object {
         /**
@@ -74,6 +79,9 @@ data class ScheduleGridStyleComposed(
                 hideTeacher = this.hideTeacher,
                 removeLocationAt = this.removeLocationAt,
                 backgroundImagePath = this.backgroundImagePath ?: "",
+                textAlignCenterHorizontal = this.textAlignCenterHorizontal,
+                textAlignCenterVertical = this.textAlignCenterVertical,
+                borderType = this.borderType
             )
         }
     }

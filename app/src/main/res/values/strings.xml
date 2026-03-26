@@ -478,6 +478,13 @@
     <string name="dialog_reset_title">重置样式</string>
     <string name="dialog_reset_message">确定要将所有样式设置恢复为默认值吗？此操作不可撤销。</string>
     <string name="action_confirm_crop">确定裁剪</string>
+    <string name="label_text_align_center_h">文字水平居中</string>
+    <string name="label_text_align_center_v">文字垂直居中</string>
+    <string name="label_border_type">边框样式</string>
+    <string name="border_type_solid">实线</string>
+    <string name="border_type_dashed">虚线</string>
+    <string name="label_range">范围</string>
+    <string name="placeholder_input_value">请输入数值</string>
 
     <!-- 快捷操作 -->
     <string name="item_quick_actions">快捷操作</string>

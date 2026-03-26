@@ -61,6 +61,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.util.Locale
 
 /**
  * 时间段管理界面的 Compose UI。
@@ -389,8 +390,8 @@ fun TimeSlotEditContent(
     var endHourState by remember { mutableStateOf(initialEndHour) }
     var endMinuteState by remember { mutableStateOf(initialEndMinute) }
 
-    val hours = (0..23).toList()
-    val minutes = (0..59).toList()
+    val hours = remember { (0..23).map { String.format(Locale.US, "%02d", it) } }
+    val minutes = remember { (0..59).map { String.format(Locale.US, "%02d", it) } }
 
     val dialogTitleEdit = stringResource(R.string.dialog_title_edit_time_slot)
     val dialogTitleAdd = stringResource(R.string.dialog_title_add_time_slot)
@@ -441,75 +442,57 @@ fun TimeSlotEditContent(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
+            // 开始时间 - 小时
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text(labelStart, style = MaterialTheme.typography.bodySmall)
                 Text(labelHour, style = MaterialTheme.typography.labelSmall)
                 NativeNumberPicker(
                     values = hours,
-                    selectedValue = startHourState,
-                    onValueChange = { startHourState = it },
-                    modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
+                    selectedValue = String.format(Locale.US, "%02d", startHourState), // Int 转 String
+                    onValueChange = { startHourState = it.toInt() }, // String 转 Int
+                    modifier = Modifier.height(150.dp).fillMaxWidth()
                 )
             }
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(":", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.align(Alignment.CenterVertically))
-            Spacer(modifier = Modifier.width(4.dp))
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
+            Text(":", style = MaterialTheme.typography.headlineMedium)
+
+            // 开始时间 - 分钟
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text("", style = MaterialTheme.typography.bodySmall)
                 Text(labelMinute, style = MaterialTheme.typography.labelSmall)
                 NativeNumberPicker(
                     values = minutes,
-                    selectedValue = startMinuteState,
-                    onValueChange = { startMinuteState = it },
-                    modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
+                    selectedValue = String.format(Locale.US, "%02d", startMinuteState),
+                    onValueChange = { startMinuteState = it.toInt() },
+                    modifier = Modifier.height(150.dp).fillMaxWidth()
                 )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
+            // 结束时间 - 小时
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text(labelEnd, style = MaterialTheme.typography.bodySmall)
                 Text(labelHour, style = MaterialTheme.typography.labelSmall)
                 NativeNumberPicker(
                     values = hours,
-                    selectedValue = endHourState,
-                    onValueChange = { endHourState = it },
-                    modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
+                    selectedValue = String.format(Locale.US, "%02d", endHourState),
+                    onValueChange = { endHourState = it.toInt() },
+                    modifier = Modifier.height(150.dp).fillMaxWidth()
                 )
             }
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(":", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.align(Alignment.CenterVertically))
-            Spacer(modifier = Modifier.width(4.dp))
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
+            Text(":", style = MaterialTheme.typography.headlineMedium)
+
+            // 结束时间 - 分钟
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text("", style = MaterialTheme.typography.bodySmall)
                 Text(labelMinute, style = MaterialTheme.typography.labelSmall)
                 NativeNumberPicker(
                     values = minutes,
-                    selectedValue = endMinuteState,
-                    onValueChange = { endMinuteState = it },
-                    modifier = Modifier
-                        .height(150.dp)
-                        .fillMaxWidth()
+                    selectedValue = String.format(Locale.US, "%02d", endMinuteState),
+                    onValueChange = { endMinuteState = it.toInt() },
+                    modifier = Modifier.height(150.dp).fillMaxWidth()
                 )
             }
         }

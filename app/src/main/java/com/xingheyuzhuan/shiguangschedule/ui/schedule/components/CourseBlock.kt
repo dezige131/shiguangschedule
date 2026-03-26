@@ -1,6 +1,7 @@
 package com.xingheyuzhuan.shiguangschedule.ui.schedule.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,23 +11,27 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.xingheyuzhuan.shiguangschedule.R
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.MergedCourseBlock
 
 /**
  * 渲染单个课程块的 UI 组件。
- * 它负责展示课程信息、颜色，并处理冲突标记。
  */
 @Composable
 fun CourseBlock(
@@ -87,20 +92,53 @@ fun CourseBlock(
     }
     val isCustomTimeCourse = customTimeString != null
 
+    // 使用系统标准轮廓色
+    val themeBorderColor = MaterialTheme.colorScheme.outline
+
+    // 边框逻辑处理
+    val shape = RoundedCornerShape(style.courseBlockCornerRadius)
+    val borderModifier = when (style.borderType) {
+        BorderTypeProto.BORDER_TYPE_SOLID -> {
+            Modifier.border(1.dp, themeBorderColor.copy(alpha = style.courseBlockAlpha), shape)
+        }
+        BorderTypeProto.BORDER_TYPE_DASHED -> {
+            Modifier.drawBehind {
+                val strokeWidth = 1.dp.toPx()
+                val dashPathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f)
+                drawOutline(
+                    outline = shape.createOutline(size, layoutDirection, this),
+                    color = themeBorderColor.copy(alpha = style.courseBlockAlpha),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = strokeWidth,
+                        pathEffect = dashPathEffect
+                    )
+                )
+            }
+        }
+        else -> Modifier
+    }
+
+    // 对齐逻辑处理
+    val horizontalAlignment = if (style.textAlignCenterHorizontal) Alignment.CenterHorizontally else Alignment.Start
+    val verticalArrangement = if (style.textAlignCenterVertical) androidx.compose.foundation.layout.Arrangement.Center else androidx.compose.foundation.layout.Arrangement.Top
+    val textAlign = if (style.textAlignCenterHorizontal) TextAlign.Center else TextAlign.Start
+
     Box(
         modifier = modifier
             .padding(style.courseBlockOuterPadding)
-            .clip(RoundedCornerShape(style.courseBlockCornerRadius))
+            .then(borderModifier) // 应用边框
+            .clip(shape)
             .background(color = blockColor)
     ) {
         // 原始内容层
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(style.courseBlockInnerPadding)
+                .padding(style.courseBlockInnerPadding),
+            horizontalAlignment = horizontalAlignment, // 水平对齐
+            verticalArrangement = verticalArrangement   // 垂直对齐
         ) {
             if (mergedBlock.isConflict) {
-                // 冲突状态下的字体缩放
                 mergedBlock.courses.forEach { course ->
                     Text(
                         text = course.course.name,
@@ -108,6 +146,7 @@ fun CourseBlock(
                         fontWeight = FontWeight.Bold,
                         color = textColor,
                         overflow = TextOverflow.Ellipsis,
+                        textAlign = textAlign,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                 }
@@ -119,14 +158,14 @@ fun CourseBlock(
                     modifier = Modifier.padding(top = 2.dp)
                 )
             } else {
-                // 时间显示层
+                // 时间显示
                 if (isCustomTimeCourse) {
                     Text(
                         text = customTimeString,
                         fontSize = s10,
                         color = textColor.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold,
-                        overflow = TextOverflow.Ellipsis,
+                        textAlign = textAlign,
                         style = TextStyle(lineHeight = 1.em)
                     )
                 } else if (style.showStartTime && startTime != null) {
@@ -135,6 +174,7 @@ fun CourseBlock(
                         fontSize = s10,
                         color = textColor.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold,
+                        textAlign = textAlign,
                         style = TextStyle(lineHeight = 1.em)
                     )
                 }
@@ -146,6 +186,7 @@ fun CourseBlock(
                     fontWeight = FontWeight.Bold,
                     color = textColor,
                     overflow = TextOverflow.Ellipsis,
+                    textAlign = textAlign,
                     modifier = Modifier.weight(1f, fill = false),
                     style = TextStyle(lineHeight = 1.2.em)
                 )
@@ -158,6 +199,7 @@ fun CourseBlock(
                             text = teacher,
                             fontSize = s10,
                             color = textColor,
+                            textAlign = textAlign,
                             overflow = TextOverflow.Ellipsis,
                             style = TextStyle(lineHeight = 1.em)
                         )
@@ -173,6 +215,7 @@ fun CourseBlock(
                             text = "$prefix$position",
                             fontSize = s10,
                             color = textColor,
+                            textAlign = textAlign,
                             overflow = TextOverflow.Ellipsis,
                             style = TextStyle(lineHeight = 1.em)
                         )
@@ -187,8 +230,7 @@ fun CourseBlock(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = (if (isDarkTheme) Color.Black else Color.White)
-                            .copy(alpha = 0.618f)
+                        color = (if (isDarkTheme) Color.Black else Color.White).copy(alpha = 0.618f)
                     )
                     .drawBehind {
                         val stripeWidth = 5.dp.toPx()

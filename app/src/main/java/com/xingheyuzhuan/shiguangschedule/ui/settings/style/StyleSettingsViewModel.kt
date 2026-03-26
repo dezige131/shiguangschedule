@@ -10,6 +10,7 @@ import com.xingheyuzhuan.shiguangschedule.data.db.main.Course
 import com.xingheyuzhuan.shiguangschedule.data.db.main.CourseWithWeeks
 import com.xingheyuzhuan.shiguangschedule.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.StyleSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.ui.schedule.MergedCourseBlock
@@ -146,6 +147,7 @@ class StyleSettingsViewModel @Inject constructor(
         // 再重置数据库所有项
         styleRepository.resetAllStyleSettings()
     }
+
     // --- 尺寸与边距 API ---
     fun updateSectionHeight(height: Float) = viewModelScope.launch { styleRepository.setSectionHeight(height) }
     fun updateTimeColumnWidth(width: Float) = viewModelScope.launch { styleRepository.setTimeColumnWidth(width) }
@@ -214,6 +216,21 @@ class StyleSettingsViewModel @Inject constructor(
         styleRepository.setRemoveLocationAt(remove)
     }
 
+    /** 更新文字是否水平居中 */
+    fun updateTextAlignCenterHorizontal(center: Boolean) = viewModelScope.launch {
+        styleRepository.setTextAlignCenterHorizontal(center)
+    }
+
+    /** 更新文字是否垂直居中 */
+    fun updateTextAlignCenterVertical(center: Boolean) = viewModelScope.launch {
+        styleRepository.setTextAlignCenterVertical(center)
+    }
+
+    /** 更新课程块边框类型 (无/实线/虚线) */
+    fun updateBorderType(type: BorderTypeProto) = viewModelScope.launch {
+        styleRepository.setBorderType(type)
+    }
+
     /**
      * 更新普通课程的主色
      * @param index UI 传递过来的颜色索引
@@ -245,7 +262,6 @@ class StyleSettingsViewModel @Inject constructor(
         styleRepository.setCourseColorMaps(updatedMaps)
     }
 
-    //  演示数据构造
     //  演示数据构造
     private fun createDemoCourses(): List<MergedCourseBlock> {
         val dummyTableId = UUID.randomUUID().toString()
@@ -282,11 +298,9 @@ class StyleSettingsViewModel @Inject constructor(
         }
 
         // 1. 普通课程展示 (周一 1-2节)
-        // 占满第 1 节和第 2 节，逻辑坐标应该是从 0.0 到 2.0
         val courseA = Course(UUID.randomUUID().toString(), dummyTableId, "普通课程展示", "张老师", "教A-101", 1, 1, 2, false, null, null, 0)
 
         // 2. 自定义时间演示 (周二 09:50 - 11:30)
-        // 假设第 3 节是 10:20 开始，那么 09:50 会被计算在第 2 节和第 3 节之间
         val courseB = Course(UUID.randomUUID().toString(), dummyTableId, "精准渲染演示", "系统", "1:1还原", 2, null, null, true, "09:50", "11:30", 1)
 
         // 3. 冲突课程 (周三 1-2节)

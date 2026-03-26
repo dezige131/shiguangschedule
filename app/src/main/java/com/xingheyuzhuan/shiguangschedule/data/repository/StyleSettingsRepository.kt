@@ -6,9 +6,12 @@ import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
 import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
 import com.xingheyuzhuan.shiguangschedule.data.model.ScheduleGridStyle
+import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.BorderTypeProto
 import com.xingheyuzhuan.shiguangschedule.data.model.schedule_style.ScheduleGridStyleProto
 import com.xingheyuzhuan.shiguangschedule.data.model.toCompose
 import com.xingheyuzhuan.shiguangschedule.data.model.toProto
+import com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -16,12 +19,11 @@ import java.io.InputStream
 import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext
 
-// 1. DataStore 文件名常量
+// DataStore 文件名常量
 const val SCHEDULE_STYLE_DATASTORE_FILE_NAME = "schedule_style_settings.pb"
 
-// 2. DataStore Serializer (序列化器)
+// DataStore Serializer (序列化器)
 object ScheduleStyleSerializer : Serializer<ScheduleGridStyleProto> {
     override val defaultValue: ScheduleGridStyleProto
         get() = ScheduleGridStyleProto.getDefaultInstance()
@@ -114,7 +116,7 @@ class StyleSettingsRepository @Inject constructor(
             clearCourseColorMaps()
             addAllCourseColorMaps(maps.map { it.toProto() })
         }
-        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
+        updateAllWidgets(context)
     }
 
     /** 重置为默认样式 */
@@ -122,89 +124,79 @@ class StyleSettingsRepository @Inject constructor(
         dataStore.updateData {
             ScheduleGridStyleProto.getDefaultInstance()
         }
-        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
+        updateAllWidgets(context)
     }
 
-    /** * 设置是否隐藏左侧时间列的具体时间
-     * @param hide true 表示隐藏，false 表示显示 (默认)
-     */
+    /** 设置是否隐藏左侧时间列的具体时间 */
     suspend fun setHideSectionTime(hide: Boolean) = updateStyle {
         hideSectionTime = hide
     }
 
-    /** * 设置是否隐藏星期栏下的日期
-     * @param hide true 表示隐藏，false 表示显示 (默认)
-     */
+    /** 设置是否隐藏星期栏下的日期 */
     suspend fun setHideDateUnderDay(hide: Boolean) = updateStyle {
         hideDateUnderDay = hide
     }
 
-    /**
-     * 设置是否隐藏网格线
-     * @param hide true 表示隐藏，false 表示显示 (默认)
-     */
+    /** 设置是否隐藏网格线 */
     suspend fun setHideGridLines(hide: Boolean) = updateStyle {
         hideGridLines = hide
     }
 
-    /** * 设置是否在课程格内显示开始时间
-     * @param show true 表示显示，false 表示不显示 (默认)
-     */
+    /** 设置是否在课程格内显示开始时间 */
     suspend fun setShowStartTime(show: Boolean) = updateStyle {
         showStartTime = show
     }
 
-    /** * 设置课程块字体的缩放比例
-     * @param scale 缩放因子，例如 1.0 为原始大小
-     */
+    /** 设置课程块字体的缩放比例 */
     suspend fun setCourseBlockFontScale(scale: Float) = updateStyle {
         courseBlockFontScale = scale
     }
 
-    /**
-     * 设置是否隐藏上课地点
-     * @param hide true 表示隐藏，false 表示显示 (默认)
-     */
+    /** 设置是否隐藏上课地点 */
     suspend fun setHideLocation(hide: Boolean) = updateStyle {
         hideLocation = hide
     }
 
-    /**
-     * 设置是否隐藏授课老师
-     * @param hide true 表示隐藏，false 表示显示 (默认)
-     */
+    /** 设置是否隐藏授课老师 */
     suspend fun setHideTeacher(hide: Boolean) = updateStyle {
         hideTeacher = hide
     }
 
-    /**
-     * 设置是否移除地点前的 @ 符号
-     * @param remove true 表示移除，false 表示保留 (默认)
-     */
+    /** 设置是否移除地点前的 @ 符号 */
     suspend fun setRemoveLocationAt(remove: Boolean) = updateStyle {
         removeLocationAt = remove
     }
 
-    /** * 设置背景壁纸的物理路径
-     */
+    /** 设置文字水平居中 */
+    suspend fun setTextAlignCenterHorizontal(center: Boolean) = updateStyle {
+        textAlignCenterHorizontal = center
+    }
+
+    /** 设置文字垂直居中 */
+    suspend fun setTextAlignCenterVertical(center: Boolean) = updateStyle {
+        textAlignCenterVertical = center
+    }
+
+    /** 设置边框类型 */
+    suspend fun setBorderType(type: BorderTypeProto) = updateStyle {
+        borderType = type
+    }
+
+    /** 设置背景壁纸的物理路径 */
     suspend fun setBackgroundImagePath(path: String) = updateStyle {
         backgroundImagePath = path
     }
 
     /**
-     * 核心修改：重置为默认样式（但保留壁纸）
-     * 如果你希望“重置样式”不影响壁纸，需要手动备份路径。
+     * 重置为默认样式（但保留壁纸）
      */
     suspend fun resetAllStyleSettingsExceptWallpaper() {
         dataStore.updateData { currentProto ->
-            // 1. 先把当前的壁纸路径备份下来
             val currentPath = currentProto.backgroundImagePath
-
-            // 2. 获取一个全默认的 Builder，然后把路径塞回去
             ScheduleGridStyleProto.newBuilder()
                 .setBackgroundImagePath(currentPath)
                 .build()
         }
-        com.xingheyuzhuan.shiguangschedule.widget.updateAllWidgets(context)
+        updateAllWidgets(context)
     }
 }

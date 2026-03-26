@@ -159,8 +159,8 @@ fun CustomTimeRangePickerBottomSheet(
     var eH by remember { mutableIntStateOf(endH) }
     var eM by remember { mutableIntStateOf(endM) }
 
-    val hours = remember { (0..23).toList() }
-    val minutes = remember { (0..59).toList() }
+    val hours = remember { (0..23).map { String.format(Locale.US, "%02d", it) } }
+    val minutes = remember { (0..59).map { String.format(Locale.US, "%02d", it) } }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -211,15 +211,16 @@ fun CustomTimeRangePickerBottomSheet(
                 ) {
                     NativeNumberPicker(
                         values = hours,
-                        selectedValue = sH,
-                        onValueChange = { sH = it },
+                        // 将 Int 转换为 "08" 这样的 String 来匹配数据源
+                        selectedValue = String.format(Locale.US, "%02d", sH),
+                        onValueChange = { sH = it.toInt() }, // 拿到 "08" 转回 8 存入 sH
                         modifier = Modifier.weight(1f)
                     )
                     Text(":", style = MaterialTheme.typography.titleMedium)
                     NativeNumberPicker(
                         values = minutes,
-                        selectedValue = sM,
-                        onValueChange = { sM = it },
+                        selectedValue = String.format(Locale.US, "%02d", sM),
+                        onValueChange = { sM = it.toInt() },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -233,15 +234,15 @@ fun CustomTimeRangePickerBottomSheet(
                 ) {
                     NativeNumberPicker(
                         values = hours,
-                        selectedValue = eH,
-                        onValueChange = { eH = it },
+                        selectedValue = String.format(Locale.US, "%02d", eH),
+                        onValueChange = { eH = it.toInt() },
                         modifier = Modifier.weight(1f)
                     )
                     Text(":", style = MaterialTheme.typography.titleMedium)
                     NativeNumberPicker(
                         values = minutes,
-                        selectedValue = eM,
-                        onValueChange = { eM = it },
+                        selectedValue = String.format(Locale.US, "%02d", eM),
+                        onValueChange = { eM = it.toInt() },
                         modifier = Modifier.weight(1f)
                     )
                 }
