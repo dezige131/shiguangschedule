@@ -11,7 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -41,6 +43,7 @@ fun <T> NativeNumberPicker(
         "可见项数量必须是大于等于 3 的奇数"
     }
 
+    val haptic = LocalHapticFeedback.current
     val initialSelectedIndex = remember(values, selectedValue) {
         values.indexOf(selectedValue).coerceAtLeast(0)
     }
@@ -73,14 +76,19 @@ fun <T> NativeNumberPicker(
             }
     }
 
-    // 逻辑部分：实时更新视觉索引
+    // 逻辑部分：实时更新视觉索引并触发震动
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
             snapshotFlow {
                 listState.run {
                     if (firstVisibleItemScrollOffset > itemHeightPx / 2) (firstVisibleItemIndex + 1).coerceAtMost(values.lastIndex) else firstVisibleItemIndex
                 }
-            }.distinctUntilChanged().collect { visuallyCenteredIndex = it }
+            }.distinctUntilChanged().collect { 
+                if (it != visuallyCenteredIndex) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                visuallyCenteredIndex = it 
+            }
         }
     }
 

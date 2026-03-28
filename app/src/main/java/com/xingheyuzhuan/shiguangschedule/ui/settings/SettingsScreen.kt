@@ -36,7 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -218,6 +220,8 @@ private fun GeneralSettingsSection(
     onFirstDayOfWeekClick: () -> Unit,
     onQuickActionsClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -237,7 +241,13 @@ private fun GeneralSettingsSection(
                 title = stringResource(R.string.item_show_non_current_week),
                 subtitle = stringResource(R.string.desc_show_non_current_week)
             ) {
-                Switch(checked = showNonCurrentWeek, onCheckedChange = onShowNonCurrentWeekChanged)
+                Switch(
+                    checked = showNonCurrentWeek, 
+                    onCheckedChange = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onShowNonCurrentWeekChanged(it)
+                    }
+                )
             }
 
             // 显示周末设置项
@@ -245,7 +255,13 @@ private fun GeneralSettingsSection(
                 title = stringResource(R.string.item_show_weekends),
                 subtitle = stringResource(R.string.desc_show_weekends)
             ) {
-                Switch(checked = showWeekends, onCheckedChange = onShowWeekendsChanged)
+                Switch(
+                    checked = showWeekends, 
+                    onCheckedChange = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onShowWeekendsChanged(it)
+                    }
+                )
             }
 
             // 开始上课时间设置项

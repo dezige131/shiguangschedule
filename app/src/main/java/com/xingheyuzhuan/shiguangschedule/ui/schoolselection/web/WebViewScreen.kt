@@ -57,7 +57,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -88,6 +90,7 @@ fun WebViewScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val haptic = LocalHapticFeedback.current
 
     val startedEmpty: Boolean = remember { initialUrl.isNullOrBlank() || initialUrl == "about:blank" }
 
@@ -375,10 +378,22 @@ fun WebViewScreen(
                                             toastDevToolsEnabledFmt.format(statusText),
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     },
                                     leadingIcon = { Icon(Icons.Filled.Build, contentDescription = stringResource(R.string.a11y_devtools)) },
                                     text = { Text(stringResource(R.string.item_devtools_debug)) },
-                                    trailingIcon = { Switch(checked = isDevToolsEnabled, onCheckedChange = null) }
+                                    trailingIcon = { 
+                                        Switch(
+                                            checked = isDevToolsEnabled, 
+                                            onCheckedChange = {
+                                                isDevToolsEnabled = it
+                                                WebView.setWebContentsDebuggingEnabled(it)
+                                                val statusText = if (it) statusEnabled else statusDisabled
+                                                Toast.makeText(context, toastDevToolsEnabledFmt.format(statusText), Toast.LENGTH_SHORT).show()
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            }
+                                        ) 
+                                    }
                                 )
                             }
                         }

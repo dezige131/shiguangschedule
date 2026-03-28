@@ -66,11 +66,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -338,6 +340,8 @@ private fun BorderTypeSelector(
         BorderTypeProto.BORDER_TYPE_DASHED to stringResource(R.string.border_type_dashed)
     )
 
+    val haptic = LocalHapticFeedback.current
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.label_border_type), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
         Row(
@@ -350,7 +354,12 @@ private fun BorderTypeSelector(
                     modifier = Modifier.weight(1f).fillMaxHeight()
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { onTypeChange(type) },
+                        .clickable { 
+                            if (currentType != type) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onTypeChange(type)
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -467,6 +476,7 @@ private fun StyleSliderItem(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val isIntegerStep = stepValue >= 1f
+    val haptic = LocalHapticFeedback.current
 
     // 定义格式化辅助函数
     fun formatValue(v: Float): String = if (isIntegerStep) "${v.toInt()}" else "%.1f".format(v)
@@ -558,7 +568,12 @@ private fun StyleSliderItem(
         }
         Slider(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { 
+                if (it != value) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onValueChange(it) 
+                }
+            },
             valueRange = range,
             steps = if (steps > 0) steps else 0,
             modifier = Modifier.height(32.dp),
@@ -598,15 +613,23 @@ private fun StyleSwitchItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) },
+        modifier = Modifier.fillMaxWidth().clickable { 
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onCheckedChange(!checked) 
+        },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCheckedChange(it)
+            },
             thumbContent = if (checked) {
                 { Icon(modifier = Modifier.size(SwitchDefaults.IconSize), imageVector = Icons.Filled.Check, contentDescription = null) }
             } else null

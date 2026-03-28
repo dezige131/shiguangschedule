@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.xingheyuzhuan.shiguangschedule.R
@@ -23,6 +25,8 @@ fun GeneralSettingsCard(
     onAppSettingsClick: () -> Unit,
     onBatteryOptimizationClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+
     Column {
         Text(
             text = stringResource(R.string.section_title_general),
@@ -62,7 +66,10 @@ fun GeneralSettingsCard(
                     )
                     Switch(
                         checked = uiState.reminderEnabled,
-                        onCheckedChange = onReminderToggle
+                        onCheckedChange = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onReminderToggle(it)
+                        }
                     )
                 }
 
@@ -81,7 +88,10 @@ fun GeneralSettingsCard(
                         )
                         Switch(
                             checked = uiState.compatWearableSync,
-                            onCheckedChange = onCompatWearableToggle
+                            onCheckedChange = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onCompatWearableToggle(it)
+                            }
                         )
                     }
                     Text(
