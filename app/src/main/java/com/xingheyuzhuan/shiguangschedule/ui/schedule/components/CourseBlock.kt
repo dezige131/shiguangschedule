@@ -224,6 +224,27 @@ fun CourseBlock(
             }
         }
 
+        // 非本周课程标记（右下角三角形）
+        if (mergedBlock.hasNonCurrentWeekCourses) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        val triangleSize = 16.dp.toPx()
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(size.width, size.height - triangleSize)
+                            lineTo(size.width, size.height)
+                            lineTo(size.width - triangleSize, size.height)
+                            close()
+                        }
+                        drawPath(
+                            path = path,
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                    }
+            )
+        }
+
         // 视觉降级蒙版层
         if (mergedBlock.isVisualDemoted) {
             Box(

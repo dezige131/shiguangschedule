@@ -41,6 +41,7 @@ data class MergedCourseBlock(
     val endSection: Float,
     val courses: List<CourseWithWeeks>,
     val isConflict: Boolean = false,
+    val hasNonCurrentWeekCourses: Boolean = false,
     val needsProportionalRendering: Boolean = false,
     val isVisualDemoted: Boolean = false
 )
@@ -384,12 +385,14 @@ class WeeklyScheduleViewModel @Inject constructor(
             }
         })
 
-        // 视觉降级判断：第一个课程是否属于本周
-        val isVisualDemoted = if (sortedCourses.isNotEmpty()) {
-            !sortedCourses.first().weeks.any { it.weekNumber == currentWeek }
-        } else {
-            false
-        }
+        val currentWeekCoursesCount = sortedCourses.count { it.weeks.any { w -> w.weekNumber == currentWeek } }
+        val hasNonCurrentWeekCourses = sortedCourses.any { !it.weeks.any { w -> w.weekNumber == currentWeek } }
+
+        // 只有当本周内有超过一门课时才算冲突
+        val isConflict = currentWeekCoursesCount > 1
+        
+        // 视觉降级判断：如果没有一个课程属于本周
+        val isVisualDemoted = currentWeekCoursesCount == 0
 
         val minS = group.minOf { it.start }
         val maxE = group.maxOf { it.end }
@@ -399,7 +402,8 @@ class WeeklyScheduleViewModel @Inject constructor(
             startSection = (minS - 1f).coerceIn(0f, totalSlots.toFloat()),
             endSection = (maxE - 1f).coerceIn(0f, totalSlots.toFloat()),
             courses = sortedCourses,
-            isConflict = sortedCourses.size > 1,
+            isConflict = isConflict,
+            hasNonCurrentWeekCourses = hasNonCurrentWeekCourses,
             needsProportionalRendering = group.any { it.raw.course.isCustomTime },
             isVisualDemoted = isVisualDemoted
         )
