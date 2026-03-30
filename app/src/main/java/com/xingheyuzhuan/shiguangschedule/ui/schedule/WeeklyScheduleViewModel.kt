@@ -385,14 +385,18 @@ class WeeklyScheduleViewModel @Inject constructor(
             }
         })
 
-        val currentWeekCoursesCount = sortedCourses.count { it.weeks.any { w -> w.weekNumber == currentWeek } }
-        val hasNonCurrentWeekCourses = sortedCourses.any { !it.weeks.any { w -> w.weekNumber == currentWeek } }
+        val currentWeekCoursesCount = sortedCourses.count { cw -> cw.weeks.any { it.weekNumber == currentWeek } }
+        val totalCoursesCount = sortedCourses.size
+        val hasNonCurrentWeekCoursesExist = sortedCourses.any { cw -> !cw.weeks.any { it.weekNumber == currentWeek } }
 
         // 只有当本周内有超过一门课时才算冲突
         val isConflict = currentWeekCoursesCount > 1
         
         // 视觉降级判断：如果没有一个课程属于本周
         val isVisualDemoted = currentWeekCoursesCount == 0
+
+        // 只有当该格子“合并”了多个课程，且其中包含非本周课程时，才显示标记
+        val hasNonCurrentWeekCourses = hasNonCurrentWeekCoursesExist && totalCoursesCount > 1
 
         val minS = group.minOf { it.start }
         val maxE = group.maxOf { it.end }
