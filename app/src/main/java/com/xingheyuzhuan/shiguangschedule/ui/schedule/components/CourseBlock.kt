@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -224,24 +227,16 @@ fun CourseBlock(
             }
         }
 
-        // 非本周课程标记（右下角三角形）
+        // 非本周课程标记 (使用手动导入的 stacks_24px.xml)
         if (mergedBlock.hasNonCurrentWeekCourses) {
-            Box(
+            Icon(
+                painter = painterResource(id = R.drawable.stacks_24px),
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .drawBehind {
-                        val triangleSize = 16.dp.toPx()
-                        val path = androidx.compose.ui.graphics.Path().apply {
-                            moveTo(size.width, size.height - triangleSize)
-                            lineTo(size.width, size.height)
-                            lineTo(size.width - triangleSize, size.height)
-                            close()
-                        }
-                        drawPath(
-                            path = path,
-                            color = textColor.copy(alpha = 0.5f)
-                        )
-                    }
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .size(16.dp),
+                tint = textColor.copy(alpha = 0.6f)
             )
         }
 
