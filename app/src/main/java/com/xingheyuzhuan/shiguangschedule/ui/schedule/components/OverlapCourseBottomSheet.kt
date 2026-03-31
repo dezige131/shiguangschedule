@@ -89,8 +89,8 @@ fun OverlapCourseBottomSheet(
                         if (isDarkTheme) dualColor.dark else dualColor.light
                     } ?: fallbackColorAdapted
 
-                    // 保持用户定义的透明度设置
-                    val cardColor = cardBaseColor.copy(alpha = style.courseBlockAlpha)
+                    // 移除透明度调节，始终为 1
+                    val cardColor = cardBaseColor
                     val textColor = MaterialTheme.colorScheme.onSurface
 
                     Card(
