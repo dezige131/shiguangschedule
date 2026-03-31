@@ -38,6 +38,8 @@
     <!-- 添加课程 -->
     <string name="toast_save_success">保存成功</string>
     <string name="toast_delete_success">删除成功</string>
+    <string name="dialog_title_delete_course">删除课程</string>
+    <string name="dialog_msg_delete_course_confirm">确定要删除该课程及其所有上课时间吗？此操作无法撤销。</string>
     <string name="title_edit_course">编辑课程</string>
     <string name="title_add_course">添加课程</string>
     <string name="label_course_name">课程名称*</string>
@@ -242,8 +244,13 @@
     <string name="desc_course_management">按名称查看和编辑所有课程</string>
 
     <!-- 管理课程 -->
-    <string name="title_selected_items_count">已选择 %1$d 项</string>
-    <string name="text_no_unique_courses_hint">当前课表暂无课程数据</string>
+    <string name="title_selected_items_count">已选 %1$d 项</string>
+    <string name="text_no_unique_courses_hint">暂无课程记录</string>
+    <string name="text_no_instances_hint">暂无实例记录</string>
+    <string name="label_instance_count">%1$d 个实例</string>
+    <string name="label_unknown">未知</string>
+    <string name="label_teacher_unknown">未知教师</string>
+    <string name="label_position_unknown">未知地点</string>
     <string name="a11y_cancel_selection">取消多选</string>
     <string name="a11y_exit_selection_mode">退出选择模式</string>
     <string name="a11y_enter_selection_mode">进入选择模式</string>
@@ -341,9 +348,19 @@
     <string name="dialog_select_update_channel">选择更新渠道</string>
     <string name="a11y_selected">已选中</string>
 
+    <string name="update_channel_gitee">Gitee 镜像 (推荐)</string>
+    <string name="update_channel_github">GitHub 官方</string>
+    <string name="error_unknown_flavor">未知 Flavor ID</string>
+    <string name="error_no_suitable_abi">未找到适合 ABI 的下载链接</string>
+    <string name="error_update_check_failed_format">检查更新失败: %1$s</string>
+
     <!-- 课程调动 -->
     <string name="title_tweak_schedule">调课</string>
-    <string name="a11y_save_tweak">保存调课更改</string>
+    <string name="a11y_save_tweak">确认调课</string>
+    <string name="section_title_config">配置</string>
+    <string name="label_operation_mode">操作模式</string>
+    <string name="title_select_from_date">选择被调整日期</string>
+    <string name="title_select_to_date">选择调整到日期</string>
     <string name="label_select_tweak_table">选择要调整的课表</string>
     <string name="action_select_table">选择课表</string>
     <string name="label_tweak_from_date">被调整日期</string>
@@ -495,12 +512,15 @@
     <string name="quick_delete_subtitle">按周次、星期或特定日期批量清理课表</string>
 
     <!-- 快速删除课程 -->
-    <string name="label_dimension_weeks_days">维度一：按周次和星期</string>
-    <string name="label_dimension_dates">维度二：按特定日期</string>
-    <string name="hint_no_selection">请选择周次、星期或日期</string>
-    <string name="hint_affected_count">预计从课表中移除 %1$d 节课程记录</string>
-    <string name="dialog_delete_confirm_msg">此操作不可撤销。受影响的课程记录将从选定的时间点中抹除，但课程的基础信息仍会保留。</string>
-    <string name="btn_add_date">添加日期</string>
+    <string name="label_filter_conditions">筛选条件</string>
+    <string name="label_filter_mode">筛选模式</string>
+    <string name="filter_mode_weeks_days">按周次与星期</string>
+    <string name="filter_mode_date_range">按日期范围</string>
+    <string name="label_start_date">开始日期</string>
+    <string name="label_end_date">结束日期</string>
+    <string name="title_select_start_date">选择开始日期</string>
+    <string name="title_select_end_date">选择结束日期</string>
+    <string name="title_filter_precise">精确筛选</string>
     <string name="quick_delete_filter_weeks_days_hint">设置重复周次与星期 (可选)</string>
     <string name="quick_delete_filter_date_range_hint">设置特定日期范围 (可选)</string>
     <string name="quick_delete_label_days_prefix">星期: %1$s</string>
@@ -508,5 +528,63 @@
     <string name="quick_delete_success">课表清理成功</string>
     <string name="error_load_failed">初始化失败，请重试</string>
     <string name="error_op_failed">操作失败: %1$s</string>
+    <string name="hint_affected_count">预计从课表中移除 %1$d 节课程记录</string>
+    <string name="hint_no_selection">请选择周次、星期或日期</string>
+    <string name="dialog_delete_confirm_msg">此操作不可撤销。受影响的课程记录将从选定的时间点中抹除，但课程的基础信息仍会保留。</string>
 
+    <!-- 导航栏额外补充 -->
+    <string name="nav_settings_main">设置</string>
+
+    <!-- 个性化设置补充 -->
+    <string name="label_bottom_bar_style">底栏样式</string>
+    <string name="label_floating_bottom_bar">悬浮底栏</string>
+    <string name="label_blur_bottom_bar">玻璃底栏模糊效果</string>
+    <string name="label_color_picker_title">选择颜色</string>
+    <string name="label_color_space_mode">色彩空间模式</string>
+    <string name="label_rgb_mode">RGB 色彩模式</string>
+    <string name="label_hsv_mode">HSV 色彩模式</string>
+    <string name="label_red_short">R (红)</string>
+    <string name="label_green_short">G (绿)</string>
+    <string name="label_blue_short">B (蓝)</string>
+    <string name="label_hue_short">H (色调)</string>
+    <string name="label_saturation_short">S (饱和度)</string>
+    <string name="label_value_short">V (明度)</string>
+    <string name="title_modify_item">修改 %1$s</string>
+
+    <!-- 主题与 Monet -->
+    <string name="style_category_theme">外观主题</string>
+    <string name="label_theme_color_scheme">配色模式</string>
+    <string name="theme_mode_system">跟随系统</string>
+    <string name="theme_mode_light">浅色模式</string>
+    <string name="theme_mode_dark">深色模式</string>
+    <string name="theme_mode_monet_system">动态取色 (跟随系统)</string>
+    <string name="theme_mode_monet_light">动态取色 (浅色)</string>
+    <string name="theme_mode_monet_dark">动态取色 (深色)</string>
+    <string name="label_monet_seed_color">动态取色种子颜色</string>
+    <string name="monet_seed_wallpaper">使用壁纸颜色</string>
+    <string name="monet_seed_custom">自定义种子颜色</string>
+    <string name="label_monet_seed_color_picker">选择种子颜色</string>
+
+    <!-- 时间段管理补充 -->
+    <string name="title_time_slot_list">时间段列表</string>
+
+    <string name="label_year">年</string>
+    <string name="label_month">月</string>
+    <string name="label_day">日</string>
+    <string name="title_select_date">选择日期</string>
+
+    <!-- AndroidBridge (教务导入反馈) -->
+    <string name="error_ui_event_queue_full">原生 UI 事件队列已满。</string>
+    <string name="error_selection_list_data">单选列表数据错误，无法显示。</string>
+    <string name="error_selection_list_json_invalid">选项列表 JSON 无效: %1$s</string>
+    <string name="error_import_no_table_selected">导入失败：未选择课表。</string>
+    <string name="error_import_table_selection_canceled">课表选择已取消。</string>
+    <string name="toast_import_courses_success">课程导入成功！课表已更新。</string>
+    <string name="error_import_courses_failed">课程导入失败: %1$s</string>
+    <string name="error_import_config_no_table">配置导入失败：未选择目标课表。</string>
+    <string name="error_import_config_canceled">课表选择已取消或未设置。</string>
+    <string name="toast_import_config_success">课表配置导入成功！</string>
+    <string name="error_import_config_failed">课表配置导入失败: %1$s</string>
+    <string name="toast_import_timeslots_success">预设时间段导入成功！</string>
+    <string name="error_import_timeslots_failed">预设时间段导入失败: %1$s</string>
 </resources>

@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package com.xingheyuzhuan.shiguangschedule.data.model;
 
-option java_package = "com.xingheyuzhuan.shiguangschedule.data.model.schedule_style";
+option java_package = "com.xingheyuzhuan.shiguangschedulemiuix.data.model.schedule_style";
 option java_multiple_files = true;
 
 // 颜色对：包含浅色和深色模式下的 ARGB 值
@@ -18,6 +18,16 @@ enum BorderTypeProto {
   BORDER_TYPE_NONE = 0;   // 无边框
   BORDER_TYPE_SOLID = 1;  // 实线
   BORDER_TYPE_DASHED = 2; // 虚线
+}
+
+// 配色模式枚举
+enum ColorSchemeModeProto {
+  COLOR_SCHEME_MODE_SYSTEM = 0;
+  COLOR_SCHEME_MODE_LIGHT = 1;
+  COLOR_SCHEME_MODE_DARK = 2;
+  COLOR_SCHEME_MODE_MONET_SYSTEM = 3;
+  COLOR_SCHEME_MODE_MONET_LIGHT = 4;
+  COLOR_SCHEME_MODE_MONET_DARK = 5;
 }
 
 // 课表网格样式配置
@@ -61,4 +71,10 @@ message ScheduleGridStyleProto {
 
 
   optional string background_image_path = 19; // 存储图片在私有目录下的绝对路径
+
+  optional bool enable_floating_bottom_bar = 24; // 开启悬浮底栏
+  optional bool enable_bottom_bar_blur = 25; //开启悬浮底栏液态玻璃效果
+
+  optional ColorSchemeModeProto color_scheme_mode = 26; // 配色模式
+  optional int64 monet_seed_color = 27; // Monet 种子颜色 (ARGB)
 }

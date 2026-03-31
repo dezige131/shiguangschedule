@@ -10,11 +10,11 @@ plugins {
 }
 
 android {
-    namespace = "com.xingheyuzhuan.shiguangschedule"
-    compileSdk = 36
+    namespace = "com.xingheyuzhuan.shiguangschedulemiuix"
+    compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.xingheyuzhuan.shiguangschedule"
+        applicationId = "com.xingheyuzhuan.shiguangschedulemiuix"
         minSdk = 26
         targetSdk = 36
         versionCode = 29
@@ -109,6 +109,7 @@ android {
         generateLocaleConfig = true
         localeFilters += listOf("zh", "zh-rCN", "zh-rTW", "en")
     }
+    compileSdkMinor = 0
 }
 aboutLibraries {
     collect {
@@ -134,6 +135,9 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.okhttp)
     implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.navigation3.runtime)
     debugImplementation(libs.okhttp.logging.interceptor)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -160,6 +164,17 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.backdrop)
+    implementation(libs.capsule)
+    implementation(libs.miuix.ui.android)
+    // 可选：添加 miuix-preference 以获取 Preference 组件
+    implementation(libs.miuix.preference.android)
+    // 可选：添加 miuix-icons 以获取更多图标
+    implementation(libs.miuix.icons.android)
+    // 可选：添加 miuix-shapes 以获取平滑圆角
+    implementation(libs.miuix.shapes.android)
+    // 可选：添加 miuix-navigation3-ui 以获取 Navigation3 支持
+    implementation(libs.miuix.navigation3.ui.android)
 }
 
 protobuf {

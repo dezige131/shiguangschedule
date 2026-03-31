@@ -26,7 +26,7 @@
 }
 
 # 保留小组件渲染和业务逻辑包
--keep class com.xingheyuzhuan.shiguangschedule.widget.** { *; }
+-keep class com.xingheyuzhuan.shiguangschedulemiuix.widget.** { *; }
 
 # -------------------------------------------------------------------------
 # 3. WorkManager 规则 (确保同步任务不失效)
@@ -110,8 +110,8 @@
 # -------------------------------------------------------------------------
 
 # 严禁混淆 JavaScript 接口方法名
--keep class com.xingheyuzhuan.shiguangschedule.ui.schoolselection.web.AndroidBridge { *; }
--keepclassmembers class com.xingheyuzhuan.shiguangschedule.ui.schoolselection.web.AndroidBridge {
+-keep class com.xingheyuzhuan.shiguangschedulemiuix.ui.schoolselection.web.AndroidBridge { *; }
+-keepclassmembers class com.xingheyuzhuan.shiguangschedulemiuix.ui.schoolselection.web.AndroidBridge {
     @android.webkit.JavascriptInterface <methods>;
 }
 
@@ -121,8 +121,8 @@
 
 # 彻底删除了 Gson 规则。
 # 保留 Room 实体类和 Data Model，防止数据库字段解析失败
--keep class com.xingheyuzhuan.shiguangschedule.data.db.** { *; }
--keep class com.xingheyuzhuan.shiguangschedule.data.model.** { *; }
+-keep class com.xingheyuzhuan.shiguangschedulemiuix.data.db.** { *; }
+-keep class com.xingheyuzhuan.shiguangschedulemiuix.data.model.** { *; }
 
 # -------------------------------------------------------------------------
 # 10. 极简优化：Release 版本自动删除所有 Log.d (调试日志)

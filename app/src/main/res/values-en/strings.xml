@@ -38,6 +38,8 @@
     <!-- Add Course -->
     <string name="toast_save_success">Saved successfully</string>
     <string name="toast_delete_success">Deleted successfully</string>
+    <string name="dialog_title_delete_course">Delete Course</string>
+    <string name="dialog_msg_delete_course_confirm">Are you sure you want to delete this course and all its scheduled sessions? This action cannot be undone.</string>
     <string name="title_edit_course">Edit course</string>
     <string name="title_add_course">Add course</string>
     <string name="label_course_name">Course name*</string>
@@ -184,9 +186,9 @@
     <!-- Settings Options -->
     <string name="title_schedule_settings">Schedule settings</string>
     <string name="section_title_general_settings">General settings</string>
-    <string name="item_show_weekends">Show weekends</string>
     <string name="item_show_non_current_week">Show non-current week courses</string>
     <string name="desc_show_non_current_week">Display courses that are outside of the current week in the schedule</string>
+    <string name="item_show_weekends">Show weekends</string>
     <string name="desc_show_weekends">When enabled, weekend courses will be displayed</string>
     <string name="item_set_start_date">Set semester start date</string>
     <string name="desc_set_start_date">Select Monday of the first week (as per academic system)</string>
@@ -244,6 +246,11 @@
     <!-- Course Management -->
     <string name="title_selected_items_count">%1$d items selected</string>
     <string name="text_no_unique_courses_hint">No course data available in the current schedule</string>
+    <string name="text_no_instances_hint">No instance records found</string>
+    <string name="label_instance_count">%1$d instances</string>
+    <string name="label_unknown">Unknown</string>
+    <string name="label_teacher_unknown">Unknown instructor</string>
+    <string name="label_position_unknown">Unknown location</string>
     <string name="a11y_cancel_selection">Cancel multiple selection</string>
     <string name="a11y_exit_selection_mode">Exit selection mode</string>
     <string name="a11y_enter_selection_mode">Enter selection mode</string>
@@ -251,11 +258,11 @@
     <string name="label_weeks_format">Weeks: %1$s</string>
 
     <!-- Time Slot Management -->
-    <string name="title_time_slot_management">Time period management</string>
+    <string name="title_time_slot_management">Time Period Management</string>
     <string name="a11y_add_time_slot">Add time period</string>
     <string name="a11y_save_all_settings">Save all settings</string>
     <string name="toast_settings_saved">All settings saved to database</string>
-    <string name="title_default_duration_settings">Default duration settings</string>
+    <string name="title_default_duration_settings">Default Duration Settings</string>
     <string name="label_class_duration_minutes">Class duration (minutes)</string>
     <string name="toast_class_duration_positive">Class duration must be greater than 0 minutes</string>
     <string name="label_break_duration_minutes">Break duration (minutes)</string>
@@ -264,13 +271,13 @@
     <string name="toast_slot_removed_unsaved">Time period removed from list, tap save to update database</string>
     <string name="time_slot_section_number">Period %1$s</string>
     <string name="a11y_delete_time_slot">Delete time period</string>
-    <string name="dialog_title_edit_time_slot">Edit time period</string>
-    <string name="dialog_title_add_time_slot">Add new time period</string>
+    <string name="dialog_title_edit_time_slot">Edit Time Period</string>
+    <string name="dialog_title_add_time_slot">Add New Time Period</string>
     <string name="label_time_picker_start">Start</string>
     <string name="label_time_picker_end">End</string>
     <string name="label_time_picker_hour">Hour</string>
     <string name="label_time_picker_minute">Minute</string>
-    <string name="action_save_changes">Save changes</string>
+    <string name="action_save_changes">Save Changes</string>
     <string name="toast_end_time_must_be_later">End time must be later than start time</string>
     <string name="toast_slot_modified_unsaved">Time period modified, tap save to update database</string>
     <string name="toast_slot_added_unsaved">Time period added to list, tap save to update database</string>
@@ -340,14 +347,24 @@
     <string name="tip_non_mandatory_update">Tip: The cancel button is not shown for mandatory updates.</string>
     <string name="dialog_select_update_channel">Select update channel</string>
     <string name="a11y_selected">Selected</string>
-    
-    <!-- Schedule Adjustment -->
+
+    <string name="update_channel_gitee">Gitee Mirror (Recommended)</string>
+    <string name="update_channel_github">GitHub Official</string>
+    <string name="error_unknown_flavor">Unknown Flavor ID</string>
+    <string name="error_no_suitable_abi">No suitable ABI download link found</string>
+    <string name="error_update_check_failed_format">Update check failed: %1$s</string>
+
+    <!-- Course Tweak -->
     <string name="title_tweak_schedule">Schedule adjustment</string>
-    <string name="a11y_save_tweak">Save schedule adjustment</string>
+    <string name="a11y_save_tweak">Confirm adjustment</string>
+    <string name="section_title_config">Configuration</string>
+    <string name="label_operation_mode">Operation mode</string>
+    <string name="title_select_from_date">Select original date</string>
+    <string name="title_select_to_date">Select destination date</string>
     <string name="label_select_tweak_table">Select schedule to adjust</string>
     <string name="action_select_table">Select schedule</string>
     <string name="label_tweak_from_date">Original date</string>
-    <string name="label_tweak_to_date">New date</string>
+    <string name="label_tweak_to_date">Destination date</string>
     <string name="text_tweak_hint">Please confirm the course information for both dates, then tap save to complete the adjustment.</string>
     <string name="title_tweak_from_course">Courses to move</string>
     <string name="a11y_arrow">Arrow</string>
@@ -448,6 +465,7 @@
     <!-- Personalization -->
     <string name="item_personalization">Personalization</string>
     <string name="desc_personalization">Adjust schedule grid height, corner radius, spacing, and opacity</string>
+    <string name="style_category_theme">Theme</string>
     <string name="style_category_interface">Interface</string>
     <string name="style_category_grid_size">Grid Size</string>
     <string name="style_category_course_block">Course Block Settings</string>
@@ -495,12 +513,15 @@
     <string name="quick_delete_subtitle">Batch clear schedule by weeks, days, or dates</string>
 
     <!-- Quick Delete Courses -->
-    <string name="label_dimension_weeks_days">Method 1: By Weeks &amp; Days</string>
-    <string name="label_dimension_dates">Method 2: By Specific Dates</string>
-    <string name="hint_no_selection">Please select weeks, days, or dates</string>
-    <string name="hint_affected_count">%1$d course records will be removed</string>
-    <string name="dialog_delete_confirm_msg">This action cannot be undone. Affected records will be erased from the selected time points, but basic course info will remain.</string>
-    <string name="btn_add_date">Add Date</string>
+    <string name="label_filter_conditions">Filter Conditions</string>
+    <string name="label_filter_mode">Filter Mode</string>
+    <string name="filter_mode_weeks_days">By Weeks &amp; Days</string>
+    <string name="filter_mode_date_range">By Date Range</string>
+    <string name="label_start_date">Start Date</string>
+    <string name="label_end_date">End Date</string>
+    <string name="title_select_start_date">Select Start Date</string>
+    <string name="title_select_end_date">Select End Date</string>
+    <string name="title_filter_precise">Precise Filtering</string>
     <string name="quick_delete_filter_weeks_days_hint">Set recurring weeks &amp; days (Optional)</string>
     <string name="quick_delete_filter_date_range_hint">Set specific date range (Optional)</string>
     <string name="quick_delete_label_days_prefix">Days: %1$s</string>
@@ -508,5 +529,60 @@
     <string name="quick_delete_success">Schedule cleared successfully</string>
     <string name="error_load_failed">Failed to initialize, please try again</string>
     <string name="error_op_failed">Operation failed: %1$s</string>
+    <string name="hint_affected_count">%1$d course records will be removed</string>
+    <string name="hint_no_selection">Please select weeks, days, or dates</string>
+    <string name="dialog_delete_confirm_msg">This action cannot be undone. Affected records will be erased from the selected time points, but basic course info will remain.</string>
 
+    <!-- Navigation Supplement -->
+    <string name="nav_settings_main">Settings</string>
+
+    <!-- Personalization Supplement -->
+    <string name="label_bottom_bar_style">Bottom Bar Style</string>
+    <string name="label_floating_bottom_bar">Floating Bottom Bar</string>
+    <string name="label_blur_bottom_bar">Glass Bottom Bar Blur</string>
+    <string name="label_theme_color_scheme">Theme Color Scheme</string>
+    <string name="theme_mode_system">Follow System</string>
+    <string name="theme_mode_light">Light Mode</string>
+    <string name="theme_mode_dark">Dark Mode</string>
+    <string name="theme_mode_monet_system">Dynamic (Follow System)</string>
+    <string name="theme_mode_monet_light">Dynamic (Light)</string>
+    <string name="theme_mode_monet_dark">Dynamic (Dark)</string>
+    <string name="label_monet_seed_color">Dynamic Seed Color</string>
+    <string name="monet_seed_wallpaper">Use Wallpaper Color</string>
+    <string name="monet_seed_custom">Custom Seed Color</string>
+    <string name="label_monet_seed_color_picker">Select Seed Color</string>
+    <string name="label_color_picker_title">Select Color</string>
+    <string name="label_color_space_mode">Color Space Mode</string>
+    <string name="label_rgb_mode">RGB Mode</string>
+    <string name="label_hsv_mode">HSV Mode</string>
+    <string name="label_red_short">R (Red)</string>
+    <string name="label_green_short">G (Green)</string>
+    <string name="label_blue_short">B (Blue)</string>
+    <string name="label_hue_short">H (Hue)</string>
+    <string name="label_saturation_short">S (Saturation)</string>
+    <string name="label_value_short">V (Value)</string>
+    <string name="title_modify_item">Modify %1$s</string>
+
+    <!-- Time Slot Management Supplement -->
+    <string name="title_time_slot_list">Time Slot List</string>
+
+    <string name="label_year">Year</string>
+    <string name="label_month">Month</string>
+    <string name="label_day">Day</string>
+    <string name="title_select_date">Select Date</string>
+
+    <!-- AndroidBridge (Academic Import Feedback) -->
+    <string name="error_ui_event_queue_full">Native UI event queue is full.</string>
+    <string name="error_selection_list_data">Selection list data error, cannot display.</string>
+    <string name="error_selection_list_json_invalid">Invalid selection list JSON: %1$s</string>
+    <string name="error_import_no_table_selected">Import failed: No schedule selected.</string>
+    <string name="error_import_table_selection_canceled">Schedule selection canceled.</string>
+    <string name="toast_import_courses_success">Courses imported successfully! Schedule updated.</string>
+    <string name="error_import_courses_failed">Course import failed: %1$s</string>
+    <string name="error_import_config_no_table">Config import failed: No target schedule selected.</string>
+    <string name="error_import_config_canceled">Schedule selection canceled or not set.</string>
+    <string name="toast_import_config_success">Schedule configuration imported successfully!</string>
+    <string name="error_import_config_failed">Schedule configuration import failed: %1$s</string>
+    <string name="toast_import_timeslots_success">Preset time slots imported successfully!</string>
+    <string name="error_import_timeslots_failed">Preset time slots import failed: %1$s</string>
 </resources>
