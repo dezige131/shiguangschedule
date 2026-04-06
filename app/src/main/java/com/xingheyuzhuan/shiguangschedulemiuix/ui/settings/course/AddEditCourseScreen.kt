@@ -47,6 +47,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -64,7 +65,9 @@ fun AddEditCourseScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scrollBehavior = MiuixScrollBehavior()
+
+    // 🌟 修复点 1：带入 rememberTopAppBarState 避免滚动状态重置
+    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
 
     // 状态追踪：记录当前正在操作哪一个方案
     var activeSchemeId by remember { mutableStateOf<String?>(null) }
@@ -85,12 +88,18 @@ fun AddEditCourseScreen(
     val nameEmptyText = stringResource(R.string.toast_name_empty)
     val toastTimeInvalid = stringResource(R.string.toast_time_invalid)
 
+    // 🌟 修复点 2：建立统一的安全退出函数，在执行 Navigation pop 前彻底洗净 ViewModel 的脏数据
+    val exitAndCleanup = {
+        viewModel.cleanUp()
+        onNavigateBack()
+    }
+
     // 统一的退出拦截逻辑
     val handleBackPress = {
         if (viewModel.hasUnsavedChanges()) {
             showExitConfirmDialog = true
         } else {
-            onNavigateBack()
+            exitAndCleanup() // 👈 使用安全退出
         }
     }
 
@@ -105,15 +114,15 @@ fun AddEditCourseScreen(
             when (event) {
                 UiEvent.SaveSuccess -> {
                     Toast.makeText(context, saveSuccessText, Toast.LENGTH_SHORT).show()
-                    onNavigateBack()
+                    exitAndCleanup() // 👈 使用安全退出
                 }
 
                 UiEvent.DeleteSuccess -> {
                     Toast.makeText(context, deleteSuccessText, Toast.LENGTH_SHORT).show()
-                    onNavigateBack()
+                    exitAndCleanup() // 👈 使用安全退出
                 }
 
-                UiEvent.Cancel -> onNavigateBack()
+                UiEvent.Cancel -> exitAndCleanup() // 👈 使用安全退出
             }
         }
     }
@@ -179,10 +188,13 @@ fun AddEditCourseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 24.dp)
+            // 🌟 修复点 3：不强制切断边界，而是交给 ContentPadding 处理边缘边距，确保 Miuix 的大标题自然滚出
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + 24.dp
+            )
         ) {
             // 课程名称输入
             item {
@@ -247,10 +259,8 @@ fun AddEditCourseScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.primary,
-                        contentColor = MiuixTheme.colorScheme.onPrimary
-                    )
+                    // 🌟 修复点 4：使用 Miuix 规范的 ButtonDefaults
+                    colors = ButtonDefaults.buttonColorsPrimary()
                 ) {
                     Icon(
                         Icons.Default.Add,
@@ -268,12 +278,10 @@ fun AddEditCourseScreen(
         }
     }
 
-    // --- 弹窗逻辑区块 (使用 activeScheme 提供上下文) ---
     val activeScheme =
         uiState.schemes.find { it.id == activeSchemeId } ?: uiState.schemes.firstOrNull()
 
     if (activeScheme != null) {
-        // 周次选择器
         WeekSelectorBottomSheet(
             show = showWeekSelectorDialog,
             totalWeeks = uiState.semesterTotalWeeks,
@@ -285,7 +293,6 @@ fun AddEditCourseScreen(
             }
         )
 
-        // 颜色选择器
         ColorPickerBottomSheet(
             show = showColorSelectorDialog,
             colorMaps = uiState.courseColorMaps,
@@ -298,7 +305,6 @@ fun AddEditCourseScreen(
             }
         )
 
-        // 时间/节次选择器
         if (activeScheme.isCustomTime) {
             CustomTimeRangePickerBottomSheet(
                 show = showTimePickerSelector,
@@ -341,7 +347,6 @@ fun AddEditCourseScreen(
             )
         }
 
-        // 星期选择器
         DayPickerDialog(
             show = showDayPickerDialog,
             selectedDay = activeScheme.day,
@@ -353,7 +358,7 @@ fun AddEditCourseScreen(
         )
     }
 
-    // 退出确认弹窗 (升级为 WindowDialog)
+    // 退出确认弹窗
     WindowDialog(
         show = showExitConfirmDialog,
         title = stringResource(R.string.common_dialog_title_abandon_changes),
@@ -382,7 +387,8 @@ fun AddEditCourseScreen(
                     )
                 }
                 Button(
-                    onClick = { showExitConfirmDialog = false; onNavigateBack() },
+                    // 🌟 修复点 5：即使是不保存直接退出，也要执行干净的清除！
+                    onClick = { showExitConfirmDialog = false; exitAndCleanup() },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(color = MiuixTheme.colorScheme.error)
                 ) {

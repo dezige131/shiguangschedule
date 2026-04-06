@@ -1,7 +1,11 @@
 package com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.course
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.xingheyuzhuan.shiguangschedulemiuix.data.db.main.Course
 import com.xingheyuzhuan.shiguangschedulemiuix.data.db.main.TimeSlot
 import com.xingheyuzhuan.shiguangschedulemiuix.data.model.DualColor
@@ -11,7 +15,12 @@ import com.xingheyuzhuan.shiguangschedulemiuix.data.repository.StyleSettingsRepo
 import com.xingheyuzhuan.shiguangschedulemiuix.data.repository.TimeSlotRepository
 import com.xingheyuzhuan.shiguangschedulemiuix.navigation.AddEditCourseChannel
 import com.xingheyuzhuan.shiguangschedulemiuix.navigation.PresetCourseData
+import com.xingheyuzhuan.shiguangschedulemiuix.service.CourseNotificationWorker
+import com.xingheyuzhuan.shiguangschedulemiuix.service.DndSchedulerWorker
+import com.xingheyuzhuan.shiguangschedulemiuix.widget.FullDataSyncWorker
+import com.xingheyuzhuan.shiguangschedulemiuix.widget.WidgetUiUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import javax.inject.Inject
 
@@ -50,11 +60,9 @@ class AddEditCourseViewModel @Inject constructor(
     private val courseTableRepository: CourseTableRepository,
     private val timeSlotRepository: TimeSlotRepository,
     private val appSettingsRepository: AppSettingsRepository,
-    private val styleSettingsRepository: StyleSettingsRepository
-    // 🚨 1. 删掉这里的 savedStateHandle
+    private val styleSettingsRepository: StyleSettingsRepository,
+    @ApplicationContext private val context: Context // 🌟 修复 1：注入全局上下文用于启动后台任务
 ) : ViewModel() {
-
-    // 🚨 2. 删掉 rawCourseId 和 courseId 这两行定义
 
     private val _uiState = MutableStateFlow(AddEditCourseUiState())
     val uiState: StateFlow<AddEditCourseUiState> = _uiState.asStateFlow()
@@ -66,30 +74,49 @@ class AddEditCourseViewModel @Inject constructor(
     private var initialName: String = ""
     private var initialSchemes: List<CourseScheme> = emptyList()
 
-    private var isInitialized: String? = null
+    private var isLoaded = false
+    private var loadedCourseId: String? = null
     private var loadJob: kotlinx.coroutines.Job? = null
 
-    // 🌟 4. 把原来 init {} 里的代码提取到这里
-    fun loadCourse(paramId: String?) {
-        // 如果 ID 没变，说明是同一次编辑（比如屏幕旋转），直接返回
-        if (isInitialized == paramId) return
-        isInitialized = paramId
+    // 🌟 修复 2：封装一条完美的自动化流水线
+    private fun triggerDataSyncAndRefresh() {
+        val syncWork = OneTimeWorkRequestBuilder<FullDataSyncWorker>().build()
+        val uiWork = OneTimeWorkRequestBuilder<WidgetUiUpdateWorker>().build()
+        val notifWork = OneTimeWorkRequestBuilder<CourseNotificationWorker>().build()
+        val dndWork = OneTimeWorkRequestBuilder<DndSchedulerWorker>().build()
 
-        // 1. 取消之前的加载任务，防止数据错乱
+        // 链式调用：必须等数据完全同步完(syncWork)，再同时更新UI、闹钟和勿扰模式
+        WorkManager.getInstance(context)
+            .beginUniqueWork("manual_sync_after_edit", ExistingWorkPolicy.REPLACE, syncWork)
+            .then(listOf(uiWork, notifWork, dndWork))
+            .enqueue()
+    }
+
+    fun cleanUp() {
+        isLoaded = false
+        loadedCourseId = null
         loadJob?.cancel()
-
-        // 2. 彻底重置所有内部状态
-        originalDbIds = emptySet()
+        _uiState.value = AddEditCourseUiState()
         initialName = ""
         initialSchemes = emptyList()
-        _uiState.value = AddEditCourseUiState()
+        originalDbIds = emptySet()
+    }
+
+    fun loadCourse(paramId: String?) {
+        if (isLoaded && loadedCourseId == paramId) return
+        isLoaded = true
+        loadedCourseId = paramId
+
+        loadJob?.cancel()
 
         val targetId = if (paramId == "new_course") null else paramId
 
         loadJob = viewModelScope.launch {
             val initialPresetData: PresetCourseData? = if (targetId == null) {
                 try {
-                    AddEditCourseChannel.presetDataFlow.first()
+                    withTimeoutOrNull(200L) {
+                        AddEditCourseChannel.presetDataFlow.first()
+                    }
                 } catch (e: Exception) {
                     null
                 }
@@ -136,7 +163,7 @@ class AddEditCourseViewModel @Inject constructor(
                     val currentColorMaps = currentStyle.courseColorMaps
 
                     if (currentState.schemes.isEmpty() && !currentState.isDataLoaded) {
-                        val schemes = if (targetId == null) { // 👈 这里换成 targetId
+                        val schemes = if (targetId == null) {
                             val newColor = currentStyle.generateRandomColorIndex()
                             listOf(
                                 CourseScheme(
@@ -192,7 +219,7 @@ class AddEditCourseViewModel @Inject constructor(
                         )
                     } else {
                         currentState.copy(
-                            isEditing = targetId != null, // 保持编辑状态
+                            isEditing = targetId != null,
                             timeSlots = timeSlots,
                             semesterTotalWeeks = totalWeeks,
                             courseColorMaps = currentColorMaps,
@@ -208,21 +235,12 @@ class AddEditCourseViewModel @Inject constructor(
         _uiState.update { it.copy(name = name) }
     }
 
-    /**
-     * 判断是否有未保存的内容变更
-     */
     fun hasUnsavedChanges(): Boolean {
         val state = uiState.value
-        // 如果数据还没加载好，认为没有变更
         if (!state.isDataLoaded) return false
-
-        // 比较名称或方案列表是否发生变化（CourseScheme 是 data class，支持内容比较）
         return state.name != initialName || state.schemes != initialSchemes
     }
 
-    /**
-     * 直接追加到末尾，不触发自动重排，方便用户立即编辑
-     */
     fun addScheme() {
         _uiState.update { state ->
             val lastScheme = state.schemes.lastOrNull()
@@ -251,9 +269,6 @@ class AddEditCourseViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 切换自定义时间
-     */
     fun toggleCustomTime(schemeId: String, isCustom: Boolean) {
         updateScheme(schemeId) { scheme ->
             scheme.copy(
@@ -264,9 +279,6 @@ class AddEditCourseViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 主动排序
-     */
     fun requestSort() {
         _uiState.update { state ->
             state.copy(schemes = state.schemes.sortedWith(schemeComparator()))
@@ -276,9 +288,12 @@ class AddEditCourseViewModel @Inject constructor(
     fun onSave() {
         viewModelScope.launch {
             val state = uiState.value
+            if (!state.isDataLoaded) return@launch
             if (state.name.isBlank()) return@launch
 
             val tableId = state.currentCourseTableId.orEmpty()
+            if (tableId.isBlank()) return@launch
+
             val currentSchemeDbIds = state.schemes.mapNotNull { it.dbId }.toSet()
 
             (originalDbIds - currentSchemeDbIds).forEach { idToRemove ->
@@ -302,16 +317,29 @@ class AddEditCourseViewModel @Inject constructor(
                 )
                 courseTableRepository.upsertCourse(course, scheme.weeks.toList())
             }
+
+            // 🌟 修复 3：保存成功后，立刻启动小部件与通知的关联同步链
+            triggerDataSyncAndRefresh()
+
             _uiEvent.send(UiEvent.SaveSuccess)
         }
     }
 
     fun onDelete() {
         viewModelScope.launch {
-            val tableId = uiState.value.currentCourseTableId.orEmpty()
+            val state = uiState.value
+            if (!state.isDataLoaded) return@launch
+
+            val tableId = state.currentCourseTableId.orEmpty()
+            if (tableId.isBlank()) return@launch
+
             originalDbIds.forEach { id ->
                 courseTableRepository.deleteCourse(createEmptyCourseForDelete(id, tableId))
             }
+
+            // 🌟 修复 4：删除成功后，同样要让小部件取消相关的闹钟并重绘
+            triggerDataSyncAndRefresh()
+
             _uiEvent.send(UiEvent.DeleteSuccess)
         }
     }
