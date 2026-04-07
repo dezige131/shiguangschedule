@@ -36,12 +36,6 @@ fun OverlapCourseBottomSheet(
 ) {
     val isDarkTheme = isSystemInDarkTheme()
 
-    // 标题颜色适配
-    val overlapTitleColor = if (isDarkTheme) {
-        style.overlapCourseColorDark
-    } else {
-        style.overlapCourseColor
-    }
 
     val fallbackColorAdapted = if (isDarkTheme) {
         style.courseColorMaps.first().dark
@@ -64,7 +58,7 @@ fun OverlapCourseBottomSheet(
                 text = stringResource(R.string.title_course_overlap),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp),
-                color = overlapTitleColor
+                color = MaterialTheme.colorScheme.onSurface
             )
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
@@ -89,8 +83,8 @@ fun OverlapCourseBottomSheet(
                         if (isDarkTheme) dualColor.dark else dualColor.light
                     } ?: fallbackColorAdapted
 
-                    // 保持用户定义的透明度设置
-                    val cardColor = cardBaseColor.copy(alpha = style.courseBlockAlpha)
+                    // 移除透明度调节，始终为 1
+                    val cardColor = cardBaseColor
                     val textColor = MaterialTheme.colorScheme.onSurface
 
                     Card(
