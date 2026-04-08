@@ -22,7 +22,9 @@ import com.xingheyuzhuan.shiguangschedulemiuix.widget.WidgetUiUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,6 +80,17 @@ class AddEditCourseViewModel @Inject constructor(
     private var loadedCourseId: String? = null
     private var loadJob: kotlinx.coroutines.Job? = null
 
+    private var cleanupJob: Job? = null
+
+    fun scheduleCleanUp() {
+        cleanupJob?.cancel()
+        cleanupJob = viewModelScope.launch {
+            // 延迟 500ms，避开 Compose 页面退场的动画时间窗口
+            delay(500)
+            cleanUp()
+        }
+    }
+
     // 🌟 修复 2：封装一条完美的自动化流水线
     private fun triggerDataSyncAndRefresh() {
         val syncWork = OneTimeWorkRequestBuilder<FullDataSyncWorker>().build()
@@ -103,6 +116,10 @@ class AddEditCourseViewModel @Inject constructor(
     }
 
     fun loadCourse(paramId: String?) {
+        if (cleanupJob?.isActive == true) {
+            cleanupJob?.cancel()
+            cleanUp()
+        }
         if (isLoaded && loadedCourseId == paramId) return
         isLoaded = true
         loadedCourseId = paramId

@@ -90,7 +90,7 @@ fun AddEditCourseScreen(
 
     // 🌟 修复点 2：建立统一的安全退出函数，在执行 Navigation pop 前彻底洗净 ViewModel 的脏数据
     val exitAndCleanup = {
-        viewModel.cleanUp()
+        viewModel.scheduleCleanUp()
         onNavigateBack()
     }
 
