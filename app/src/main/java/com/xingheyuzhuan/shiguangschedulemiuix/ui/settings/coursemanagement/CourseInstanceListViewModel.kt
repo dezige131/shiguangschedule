@@ -33,11 +33,18 @@ class CourseInstanceListViewModel @Inject constructor(
     // 🌟 新增：用于接收 UI 层传入的 courseName
     private val _selectedCourseName = MutableStateFlow("")
 
+    // 🌟 新增：强制清理多选状态
+    fun clearSelection() {
+        _isSelectionMode.value = false
+        _selectedCourseIds.value = emptySet()
+    }
+
     // 🌟 新增：暴露给 UI 调用的加载方法
     fun loadCourseName(name: String) {
         if (_selectedCourseName.value != name) {
             _selectedCourseName.value = name
         }
+        clearSelection()
     }
 
     private val currentTableIdFlow = appSettingsRepository.getAppSettings()

@@ -1,5 +1,6 @@
 package com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.coursemanagement
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,6 +78,18 @@ fun CourseInstanceListScreen(
     val isSelectionMode = uiState.isSelectionMode
     val selectedCourseIds = uiState.selectedCourseIds
 
+    // 修复直接退出问题：拦截系统返回键
+    BackHandler(enabled = isSelectionMode) {
+        viewModel.clearSelection()
+    }
+
+    // 修复多选状态泄露的兜底：页面被销毁时清理状态
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearSelection()
+        }
+    }
+
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -90,7 +104,7 @@ fun CourseInstanceListScreen(
                 ) else courseName,
                 navigationIcon = {
                     if (isSelectionMode) {
-                        IconButton(onClick = { viewModel.toggleSelectionMode() }) {
+                        IconButton(onClick = { viewModel.clearSelection() }) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = stringResource(R.string.action_cancel),

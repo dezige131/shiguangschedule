@@ -1,5 +1,6 @@
 package com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.coursemanagement
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
@@ -65,6 +66,11 @@ fun CourseNameListScreen(
 
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedCourseNames by remember { mutableStateOf(setOf<String>()) }
+
+    BackHandler(enabled = isSelectionMode) {
+        isSelectionMode = false
+        selectedCourseNames = emptySet()
+    }
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
