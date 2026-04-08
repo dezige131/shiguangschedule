@@ -203,6 +203,8 @@
     <string name="status_current_week_format">Week %1$d</string>
     <string name="item_first_day_of_week">Week starts on</string>
     <string name="desc_first_day_of_week">Set which day the week starts on</string>
+    <string name="item_default_home_page">Default Home Page</string>
+    <string name="desc_default_home_page">The page displayed by default when starting the app</string>
     <string name="day_of_week_monday">Monday</string>
     <string name="day_of_week_sunday">Sunday</string>
     <string name="item_schedule_tweak">Schedule adjustment</string>

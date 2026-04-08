@@ -203,6 +203,8 @@
     <string name="status_current_week_format">第 %1$d 周</string>
     <string name="item_first_day_of_week">设置每周起始日</string>
     <string name="desc_first_day_of_week">设置一周从哪天开始计算和显示</string>
+    <string name="item_default_home_page">默认主界面</string>
+    <string name="desc_default_home_page">启动应用时默认显示的页面</string>
     <string name="day_of_week_monday">周一</string>
     <string name="day_of_week_sunday">周日</string>
     <string name="item_schedule_tweak">课程调动</string>

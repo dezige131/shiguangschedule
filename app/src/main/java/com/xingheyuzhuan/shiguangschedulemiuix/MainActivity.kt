@@ -45,6 +45,7 @@ import com.xingheyuzhuan.shiguangschedulemiuix.ui.components.FloatingBottomBar
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.components.FloatingBottomBarItem
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.schedule.WeeklyScheduleScreen
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.SettingsScreen
+import com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.SettingsViewModel
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.settings.style.StyleSettingsViewModel
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.theme.ShiguangScheduleTheme
 import com.xingheyuzhuan.shiguangschedulemiuix.ui.today.TodayScheduleScreen
@@ -71,10 +72,21 @@ class MainActivity : AppCompatActivity() {
 // 新的 MainScreen，内部自闭环包含三个子 Tab 和底栏
 @Composable
 fun MainScreen(
-    styleViewModel: StyleSettingsViewModel = hiltViewModel()
+    styleViewModel: StyleSettingsViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    // 阻断渲染，直到配置读取完毕，避免 Pager 初始页面跳动
+    if (!uiState.isReady) {
+        Box(Modifier.fillMaxSize())
+        return
+    }
+
+    // 获取当前设置的主页 (0 或 1)
+    val homePage = uiState.appSettings.defaultHomePage
     val navigator = LocalAppNavigator.current
-    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val pagerState = rememberPagerState(initialPage = homePage, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
     // 🛠️ 核心修复：
@@ -82,14 +94,13 @@ fun MainScreen(
     // 如果 size > 1，说明正在进入或已经在二级页面，此时 BackHandler 应该处于 disabled 状态，
     // 🛠️ 优化：增加 targetPage 判断，确保在 Pager 切换动画过程中（包括手动滑动中）
     // 也能拦截返回键并“打断”动画回到课表页。
-    val isNotAtHome = pagerState.currentPage != 1 || pagerState.targetPage != 1
-    
+    val isNotAtHome = pagerState.currentPage != homePage || pagerState.targetPage != homePage
+
     BackHandler(enabled = isNotAtHome && navigator.size == 1) {
         coroutineScope.launch {
-            // 立即发起回到课表页（索引 1）的动画
-            // 这会打断当前正在进行的向 0 或 2 的动画
+            // 立即发起回到主页的动画
             pagerState.animateScrollToPage(
-                page = 1,
+                page = homePage,
                 animationSpec = androidx.compose.animation.core.tween(
                     durationMillis = 350,
                     easing = androidx.compose.animation.core.FastOutSlowInEasing

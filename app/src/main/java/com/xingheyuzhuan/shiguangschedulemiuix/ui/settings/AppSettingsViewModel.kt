@@ -153,4 +153,15 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * 更新默认主界面
+     */
+    fun onDefaultHomePageChanged(pageIndex: Int) {
+        viewModelScope.launch {
+            val currentSettings = uiState.value.appSettings
+            val updatedSettings = currentSettings.copy(defaultHomePage = pageIndex)
+            appSettingsRepository.insertOrUpdateAppSettings(updatedSettings)
+        }
+    }
 }

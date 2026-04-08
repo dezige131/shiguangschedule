@@ -138,7 +138,9 @@ fun SettingsScreen(
                         onSemesterTotalWeeksClick = { showTotalWeeksDialog = true },
                         onManualWeekClick = { showManualWeekDialog = true },
                         onFirstDayOfWeekSelected = { viewModel.onFirstDayOfWeekSelected(it) },
-                        onQuickActionsClick = { navigator.add(AppRoute.QuickActions) }
+                        onQuickActionsClick = { navigator.add(AppRoute.QuickActions) },
+                        defaultHomePage = appSettings.defaultHomePage,
+                        onDefaultHomePageChanged = { viewModel.onDefaultHomePageChanged(it) }
                     )
                 }
 
@@ -205,7 +207,11 @@ private fun GeneralSettingsSection(
     onSemesterTotalWeeksClick: () -> Unit,
     onManualWeekClick: () -> Unit,
     onFirstDayOfWeekSelected: (Int) -> Unit,
-    onQuickActionsClick: () -> Unit
+    onQuickActionsClick: () -> Unit,
+
+    defaultHomePage: Int,
+
+    onDefaultHomePageChanged: (Int) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -238,7 +244,7 @@ private fun GeneralSettingsSection(
                 onCheckedChange = onShowWeekendsChanged
             )
 
-            // 开始上课时间设置项 [cite: 189, 202]
+            // 开始上课时间设置项
             ArrowPreference(
                 title = stringResource(R.string.item_set_start_date),
                 summary = semesterStartDate?.format(DateTimeFormatter.ofPattern(stringResource(R.string.date_format_year_month_day)))
@@ -246,14 +252,14 @@ private fun GeneralSettingsSection(
                 onClick = onSemesterStartDateClick
             )
 
-            // 本学期总周数设置项 [cite: 189, 202]
+            // 本学期总周数设置项
             ArrowPreference(
                 title = stringResource(R.string.item_total_weeks),
                 summary = stringResource(R.string.status_total_weeks_format, semesterTotalWeeks),
                 onClick = onSemesterTotalWeeksClick
             )
 
-            // 当前周数设置项 [cite: 189, 202]
+            // 当前周数设置项
             val weekStatusText = when {
                 semesterStartDate == null -> stringResource(R.string.status_set_start_date_first)
                 displayCurrentWeek == null -> stringResource(R.string.status_on_vacation)
@@ -284,7 +290,22 @@ private fun GeneralSettingsSection(
                 }
             )
 
-            // 快捷操作页面 [cite: 189, 202]
+            // 默认主界面设置
+            val homePageOptions = listOf(
+                stringResource(R.string.nav_today_schedule), // 今日课表
+                stringResource(R.string.nav_course_schedule) // 课表页
+            )
+            WindowDropdownPreference(
+                title = stringResource(R.string.item_default_home_page),
+                summary = stringResource(R.string.desc_default_home_page),
+                items = homePageOptions,
+                selectedIndex = defaultHomePage,
+                onSelectedIndexChange = { index ->
+                    onDefaultHomePageChanged(index)
+                }
+            )
+
+            // 快捷操作页面
             ArrowPreference(
                 title = stringResource(R.string.item_quick_actions),
                 summary = stringResource(R.string.desc_quick_actions),

@@ -81,6 +81,7 @@ class AppSettingsRepository @Inject constructor(
             prefs[AppSettingsModel.KEY_AUTO_CONTROL_MODE] = newSettings.autoControlMode.value
             prefs[AppSettingsModel.KEY_COMPAT_WEARABLE_SYNC] = newSettings.compatWearableSync
             prefs[AppSettingsModel.KEY_SHOW_NON_CURRENT_WEEK_COURSES] = newSettings.showNonCurrentWeekCourses
+            prefs[AppSettingsModel.KEY_DEFAULT_HOME_PAGE] = newSettings.defaultHomePage
         }
     }
 

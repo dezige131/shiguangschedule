@@ -56,8 +56,10 @@ data class AppSettingsModel(
     val compatWearableSync: Boolean = false,
 
     /** 是否显示非本周课程 */
-    val showNonCurrentWeekCourses: Boolean = false
+    val showNonCurrentWeekCourses: Boolean = false,
 
+    /** 默认主界面：0 为今日课表，1 为课表页 */
+    val defaultHomePage: Int = 1
 ) {
     /**
      * 将 DataStore 的 Key 定义在伴生对象中。
@@ -74,6 +76,8 @@ data class AppSettingsModel(
         val KEY_COMPAT_WEARABLE_SYNC = booleanPreferencesKey("compat_wearable_sync")
         val KEY_SHOW_NON_CURRENT_WEEK_COURSES = booleanPreferencesKey("show_non_current_week_courses")
 
+        val KEY_DEFAULT_HOME_PAGE = intPreferencesKey("default_home_page")
+
         /**
          * 从 Preferences 中解析出 AppSettingsModel
          */
@@ -87,7 +91,8 @@ data class AppSettingsModel(
                 autoModeEnabled = prefs[KEY_AUTO_MODE_ENABLED] ?: d.autoModeEnabled,
                 autoControlMode = AutoControlMode.fromString(prefs[KEY_AUTO_CONTROL_MODE]),
                 compatWearableSync = prefs[KEY_COMPAT_WEARABLE_SYNC] ?: d.compatWearableSync,
-                showNonCurrentWeekCourses = prefs[KEY_SHOW_NON_CURRENT_WEEK_COURSES] ?: d.showNonCurrentWeekCourses
+                showNonCurrentWeekCourses = prefs[KEY_SHOW_NON_CURRENT_WEEK_COURSES] ?: d.showNonCurrentWeekCourses,
+                defaultHomePage = prefs[KEY_DEFAULT_HOME_PAGE] ?: d.defaultHomePage
             )
         }
     }
