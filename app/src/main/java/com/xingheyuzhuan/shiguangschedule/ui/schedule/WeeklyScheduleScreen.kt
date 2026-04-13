@@ -102,6 +102,8 @@ fun WeeklyScheduleScreen(
     val composedStyle by remember(uiState.style) {
         derivedStateOf { with(ScheduleGridStyleComposed) { uiState.style.toComposedStyle() } }
     }
+    val customTextColor = composedStyle.pageTextColor ?: MaterialTheme.colorScheme.onSurface
+    val customSubTextColor = customTextColor.copy(alpha = 0.7f)
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (composedStyle.backgroundImagePath.isNotEmpty()) {
@@ -117,7 +119,6 @@ fun WeeklyScheduleScreen(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             containerColor = Color.Transparent,
             topBar = {
-                val isTransparent = composedStyle.backgroundImagePath.isNotEmpty()
                 CenterAlignedTopAppBar(
                     title = {
                         Column(
@@ -134,7 +135,8 @@ fun WeeklyScheduleScreen(
                         ) {
                             Text(
                                 text = uiState.weekTitle,
-                                style = MaterialTheme.typography.titleLarge
+                                style = MaterialTheme.typography.titleLarge,
+                                color = customTextColor
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
@@ -142,7 +144,7 @@ fun WeeklyScheduleScreen(
                                 modifier = Modifier
                                     .size(20.dp)
                                     .offset(y = (-4).dp),
-                                tint = if (isTransparent) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                tint = customSubTextColor
                             )
                         }
                     },
@@ -157,7 +159,8 @@ fun WeeklyScheduleScreen(
                 BottomNavigationBar(
                     currentDestination = Destination.CourseSchedule,
                     onTabSelected = { dest -> onNavigate(dest) },
-                    isTransparent = composedStyle.backgroundImagePath.isNotEmpty()
+                    isTransparent = composedStyle.backgroundImagePath.isNotEmpty(),
+                    contentColor = customTextColor
                 )
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) }

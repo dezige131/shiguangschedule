@@ -489,6 +489,8 @@
     <string name="label_range">范围</string>
     <string name="placeholder_input_value">请输入数值</string>
     <string name="label_overlap_style_toggle">重叠课程块样式切换</string>
+    <string name="label_page_text_color">课表页面文字颜色</string>
+    <string name="label_course_text_color">课程块文字颜色</string>
 
     <!-- 快捷操作 -->
     <string name="item_quick_actions">快捷操作</string>

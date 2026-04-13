@@ -46,7 +46,10 @@ data class ScheduleGridStyleComposed(
     val textAlignCenterHorizontal: Boolean, // 文字水平居中
     val textAlignCenterVertical: Boolean,   // 文字垂直居中
     val borderType: BorderTypeProto,        // 边框类型 (NONE/SOLID/DASHED)
-    val overlapStyleToggle: Boolean         // 重叠样式切换
+    val overlapStyleToggle: Boolean,         // 重叠样式切换
+
+    val pageTextColor: Color?, // 页面字符颜色
+    val courseTextColor: Color?, // 课程块文字颜色
 ) {
     companion object {
         /**
@@ -79,7 +82,9 @@ data class ScheduleGridStyleComposed(
                 textAlignCenterHorizontal = this.textAlignCenterHorizontal,
                 textAlignCenterVertical = this.textAlignCenterVertical,
                 borderType = this.borderType,
-                overlapStyleToggle = this.overlapStyleToggle
+                overlapStyleToggle = this.overlapStyleToggle,
+                pageTextColor = this.pageTextColorLong?.let { Color(it) },
+                courseTextColor = this.courseTextColorLong?.let { Color(it) },
             )
         }
     }

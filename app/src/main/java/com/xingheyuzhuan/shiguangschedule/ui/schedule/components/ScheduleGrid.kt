@@ -55,17 +55,18 @@ fun ScheduleGrid(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
 
-        // 1. 处理日期与星期排序
+        val pageTextColor = style.pageTextColor ?: MaterialTheme.colorScheme.onSurface
+        val pageSubTextColor = pageTextColor.copy(alpha = 0.7f)
         val weekDays = stringArrayResource(R.array.week_days_short_names).toList()
         val reorderedWeekDays = rearrangeDays(weekDays, firstDayOfWeek)
         val displayDays = if (showWeekends) reorderedWeekDays else reorderedWeekDays.take(5)
 
-        // 2. 计算尺寸
+        // 计算尺寸
         val cellWidth = (screenWidth - style.timeColumnWidth) / displayDays.size
         val totalGridHeight = style.sectionHeight * timeSlots.size
         val gridLineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
 
-        // 3. 转换绘图数据
+        // 转换绘图数据
         val schedulables = mergedCourses.mapNotNull { block ->
             val displayIdx = mapDayToDisplayIndex(block.day, firstDayOfWeek, showWeekends)
             if (displayIdx == -1) return@mapNotNull null
@@ -78,10 +79,10 @@ fun ScheduleGrid(
         }
 
         Column(Modifier.fillMaxSize()) {
-            DayHeader(style, displayDays, dates, currentYear, todayIndex, gridLineColor)
+            DayHeader(style, displayDays, dates, currentYear, todayIndex, gridLineColor, pageTextColor, pageSubTextColor)
 
             Row(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                TimeColumn(style, timeSlots, onTimeSlotClicked, Modifier.height(totalGridHeight), gridLineColor, currentSectionIndex)
+                TimeColumn(style, timeSlots, onTimeSlotClicked, Modifier.height(totalGridHeight), gridLineColor, currentSectionIndex, pageTextColor, pageSubTextColor)
 
                 Box(Modifier.height(totalGridHeight).weight(1f)) {
                     ClickableGrid(
@@ -123,7 +124,16 @@ fun ScheduleGrid(
 // 子组件
 
 @Composable
-private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String>, dates: List<String>, currentYear: String, todayIndex: Int, lineColor: Color) {
+private fun DayHeader(
+    style: ScheduleGridStyleComposed,
+    displayDays: List<String>,
+    dates: List<String>,
+    currentYear: String,
+    todayIndex: Int,
+    lineColor: Color,
+    textColor: Color,
+    subTextColor: Color
+) {
     Row(Modifier.fillMaxWidth().height(style.dayHeaderHeight)) {
         Box(
             Modifier
@@ -142,7 +152,7 @@ private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String
                 text = currentYear,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = subTextColor
             )
         }
         displayDays.forEachIndexed { index, day ->
@@ -160,13 +170,13 @@ private fun DayHeader(style: ScheduleGridStyleComposed, displayDays: List<String
                         text = day,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = textColor
                     )
                     if (!style.hideDateUnderDay && dates.size > index) {
                         Text(
                             text = dates[index],
                             fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = subTextColor
                         )
                     }
                 }
@@ -182,7 +192,9 @@ private fun TimeColumn(
     onTimeSlotClicked: () -> Unit,
     modifier: Modifier,
     lineColor: Color,
-    currentSectionIndex: Int = -1
+    currentSectionIndex: Int = -1,
+    textColor: Color,
+    subTextColor: Color
 ) {
     Column(modifier.width(style.timeColumnWidth)) {
         timeSlots.forEachIndexed { index, slot ->
@@ -212,22 +224,22 @@ private fun TimeColumn(
                         text = slot.number.toString(),
                         fontSize = if (h < 32.dp) 12.sp else 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = textColor
                     )
                     if (!style.hideSectionTime) {
                         when {
                             // 充足空间：标准三行排列，带适度间距
                             h >= 52.dp -> {
                                 Spacer(Modifier.height(2.dp))
-                                TimeText(slot.startTime)
-                                TimeText(slot.endTime)
+                                TimeText(slot.startTime, subTextColor)
+                                TimeText(slot.endTime, subTextColor)
                             }
                             // 紧凑空间：合并为一行，横向展示
                             h >= 38.dp -> {
                                 Text(
                                     text = "${slot.startTime}-${slot.endTime}",
                                     fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = subTextColor,
                                     maxLines = 1
                                 )
                             }
@@ -240,11 +252,11 @@ private fun TimeColumn(
 }
 
 @Composable
-private fun TimeText(text: String) {
+private fun TimeText(text: String, color: Color) {
     Text(
         text = text,
         fontSize = 10.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = color,
         style = TextStyle(lineHeight = 1.em)
     )
 }

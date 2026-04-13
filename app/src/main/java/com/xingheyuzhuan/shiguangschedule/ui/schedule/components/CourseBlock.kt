@@ -87,7 +87,7 @@ fun CourseBlock(
         (courseColorAdapted ?: fallbackColorAdapted).copy(alpha = style.courseBlockAlpha)
     }
 
-    val textColor = MaterialTheme.colorScheme.onSurface
+    val textColor = style.courseTextColor ?: MaterialTheme.colorScheme.onSurface
 
     // 字体大小计算逻辑
     val s13 = (13 * style.fontScale).sp

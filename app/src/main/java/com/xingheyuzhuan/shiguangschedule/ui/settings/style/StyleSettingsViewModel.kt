@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -50,9 +49,9 @@ class StyleSettingsViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val demoUiState: StateFlow<WeeklyScheduleUiState> = appSettingsRepository.getAppSettings()
         .flatMapLatest { settings ->
-            val configFlow = settings.currentCourseTableId?.let { tableId ->
+            val configFlow = settings.currentCourseTableId.let { tableId ->
                 appSettingsRepository.getCourseTableConfigFlow(tableId)
-            } ?: flowOf(null)
+            }
 
             combine(configFlow, styleRepository.styleFlow) { config, currentStyle ->
                 WeeklyScheduleUiState(
@@ -229,6 +228,16 @@ class StyleSettingsViewModel @Inject constructor(
         styleRepository.setBorderType(type)
     }
 
+    /** 更新页面网格文字颜色 */
+    fun updatePageTextColor(color: Color?) = viewModelScope.launch {
+        styleRepository.setPageTextColor(color)
+    }
+
+    /** 更新课程块内部文字颜色 */
+    fun updateCourseTextColor(color: Color?) = viewModelScope.launch {
+        styleRepository.setCourseTextColor(color)
+    }
+
     /**
      * 更新普通课程的主色
      * @param index UI 传递过来的颜色索引
@@ -266,8 +275,6 @@ class StyleSettingsViewModel @Inject constructor(
         val slots = createDemoTimeSlots()
 
         /**
-         * 修正后的逻辑位置计算：
-         * 为了让预览界面和实际课表对齐，这里必须模拟 [timeToLogicalScale] 的计算结果。
          * startSection = (逻辑节次 - 1)
          */
         fun getLogicalPosition(timeStr: String): Float {

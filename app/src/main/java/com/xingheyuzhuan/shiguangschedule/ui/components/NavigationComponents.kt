@@ -24,12 +24,14 @@ import com.xingheyuzhuan.shiguangschedule.R
  * @param currentDestination 当前所在的 Destination 对象
  * @param onTabSelected 当用户点击 Tab 时的回调
  * @param isTransparent 是否开启透明模式（用于课表背景图展示）
+ * @param contentColor 自定义内容颜色（通常来自课表样式的文字颜色）
  */
 @Composable
 fun BottomNavigationBar(
     currentDestination: Destination,
     onTabSelected: (Destination) -> Unit,
-    isTransparent: Boolean = false
+    isTransparent: Boolean = false,
+    contentColor: Color? = null
 ) {
     // 定义底部三个主入口及其对应的文本和图标
     val navItems = listOf(
@@ -40,6 +42,9 @@ fun BottomNavigationBar(
 
     val iconSize = 24.dp
     val textSize = 12.sp
+
+    val finalContentColor = contentColor ?: MaterialTheme.colorScheme.onSurface
+    val finalSubTextColor = finalContentColor.copy(alpha = 0.7f)
 
     NavigationBar(
         containerColor = if (isTransparent) Color.Transparent else MaterialTheme.colorScheme.surface,
@@ -67,11 +72,14 @@ fun BottomNavigationBar(
                 },
                 label = { Text(label, fontSize = textSize) },
                 colors = NavigationBarItemDefaults.colors(
+                    // 透明模式下隐藏指示器背景（那个椭圆），纯色模式下保留（方便识别）
                     indicatorColor = if (isTransparent) Color.Transparent else MaterialTheme.colorScheme.secondaryContainer,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface
+
+                    // 只要自定义了颜色 (contentColor != null)，就应用 finalContentColor
+                    selectedIconColor = if (contentColor != null) finalContentColor else MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = if (contentColor != null) finalContentColor else MaterialTheme.colorScheme.onSurface,
+                    unselectedIconColor = if (contentColor != null) finalSubTextColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = if (contentColor != null) finalSubTextColor else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }

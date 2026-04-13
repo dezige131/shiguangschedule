@@ -491,6 +491,7 @@
 
     <!-- Quick Actions -->
     <string name="label_overlap_style_toggle">Toggle overlapping style</string>
+    <string name="label_course_text_color">Course block text color</string>
     <string name="item_quick_actions">Quick Actions</string>
     <string name="desc_quick_actions">Includes schedule tweaks, temporary changes, etc.</string>
     <string name="label_quick_action_category_schedule">Schedule Adjustments</string>
@@ -522,5 +523,6 @@
     <string name="light_primary_color">Light Primary Color</string>
     <string name="dark_primary_color">Dark Primary Color</string>
     <string name="theme_color_hint">Note: After changing this color, the system will use it as a seed color to recalculate the entire app\\\'s color scheme.</string>
+    <string name="label_page_text_color">Schedule text color</string>
 
 </resources>

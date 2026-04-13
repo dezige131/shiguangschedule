@@ -46,6 +46,8 @@ data class ScheduleGridStyle(
     val textAlignCenterVertical: Boolean = false,
     val borderType: BorderTypeProto = BorderTypeProto.BORDER_TYPE_NONE,
     val overlapStyleToggle: Boolean = false,
+    val pageTextColorLong: Long? = null,
+    val courseTextColorLong: Long? = null,
 
     // 背景壁纸路径 (存储在私有目录下的绝对路径)
     val backgroundImagePath: String? = null
@@ -106,6 +108,8 @@ data class ScheduleGridStyle(
             textAlignCenterVertical = false,
             borderType = BorderTypeProto.BORDER_TYPE_NONE,
             overlapStyleToggle = false,
+            pageTextColorLong = null,
+            courseTextColorLong = null,
             backgroundImagePath = null
         )
     }
@@ -160,6 +164,8 @@ fun ScheduleGridStyleProto.toCompose(): ScheduleGridStyle {
         hideLocation = if (hasHideLocation()) hideLocation else d.hideLocation,
         hideTeacher = if (hasHideTeacher()) hideTeacher else d.hideTeacher,
         removeLocationAt = if (hasRemoveLocationAt()) removeLocationAt else d.removeLocationAt,
+        pageTextColorLong = if (hasPageTextColorLong()) pageTextColorLong else null,
+        courseTextColorLong = if (hasCourseTextColorLong()) courseTextColorLong else null,
 
         // 7. 对齐与边框
         textAlignCenterHorizontal = if (hasTextAlignCenterHorizontal()) textAlignCenterHorizontal else d.textAlignCenterHorizontal,
@@ -199,6 +205,8 @@ fun ScheduleGridStyle.toProto(): ScheduleGridStyleProto {
         textAlignCenterVertical = this@toProto.textAlignCenterVertical
         borderType = this@toProto.borderType
         overlapStyleToggle = this@toProto.overlapStyleToggle
+        this@toProto.pageTextColorLong?.let { pageTextColorLong = it }
+        this@toProto.courseTextColorLong?.let { courseTextColorLong = it }
 
         // 路径映射
         backgroundImagePath = this@toProto.backgroundImagePath ?: ""

@@ -1,6 +1,8 @@
 package com.xingheyuzhuan.shiguangschedule.data.repository
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
@@ -31,7 +33,7 @@ object ScheduleStyleSerializer : Serializer<ScheduleGridStyleProto> {
     override suspend fun readFrom(input: InputStream): ScheduleGridStyleProto {
         return try {
             ScheduleGridStyleProto.parseFrom(input)
-        } catch (exception: Exception) {
+        } catch (_: Exception) {
             ScheduleGridStyleProto.getDefaultInstance()
         }
     }
@@ -58,7 +60,7 @@ val Context.scheduleGridStyleDataStore: DataStore<ScheduleGridStyleProto> by dat
 @Singleton
 class StyleSettingsRepository @Inject constructor(
     private val dataStore: DataStore<ScheduleGridStyleProto>,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     /**
@@ -176,6 +178,26 @@ class StyleSettingsRepository @Inject constructor(
     /** 设置边框类型 */
     suspend fun setBorderType(type: BorderTypeProto) = updateStyle {
         borderType = type
+    }
+
+    /**
+     * 设置自定义页面文本颜色
+     * @param color 传入 Color 对象；传 null 则清除自定义颜色，恢复系统默认
+     */
+    suspend fun setPageTextColor(color: Color?) = updateStyle {
+        if (color != null) {
+            pageTextColorLong = color.toArgb().toLong()
+        } else {
+            clearPageTextColorLong()
+        }
+    }
+    /** 设置课程块文字颜色 */
+    suspend fun setCourseTextColor(color: Color?) = updateStyle {
+        if (color != null) {
+            courseTextColorLong = color.toArgb().toLong()
+        } else {
+            clearCourseTextColorLong()
+        }
     }
 
     /** 设置背景壁纸的物理路径 */

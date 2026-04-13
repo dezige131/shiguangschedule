@@ -48,20 +48,18 @@ message ScheduleGridStyleProto {
   optional bool hide_date_under_day = 13; // 隐藏日期 (如 06-23)
   optional bool show_start_time = 14;     // 课程格内是否显示开始时间
   optional bool hide_grid_lines = 20;     // 是否隐藏网格线
+  optional int64 page_text_color_long = 25;   // 页面文字颜色 (ARGB Long)
 
   // 字体配置
   optional float course_block_font_scale = 15; // 文字缩放比例 (默认 1.0)
-
   optional bool hide_location = 16;       // 是否隐藏上课地点
   optional bool hide_teacher = 17;        // 是否隐藏授课老师
   optional bool remove_location_at = 18;  // 是否移除地点前的 @ 符号
   optional bool text_align_center_horizontal = 21; // 水平居中开关
   optional bool text_align_center_vertical = 22;   // 垂直居中开关
-
   optional BorderTypeProto border_type = 23;  // 边框类型
-
   optional bool overlap_style_toggle = 24;   // 重叠样式切换开关
-
+  optional int64 course_text_color_long = 26; // 课程块文字颜色
 
   optional string background_image_path = 19; // 存储图片在私有目录下的绝对路径
 }
