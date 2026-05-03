@@ -47,4 +47,10 @@ sealed interface WebUiEvent {
         val data: SingleSelectionDialogData,
         val callback: (selectedIndex: Int?) -> Unit
     ) : WebUiEvent
+
+    /** JS 捕获到了可能的凭据，请求原生端确认保存 */
+    data class RequestSaveCredentials(
+        val username: String,
+        val password: String
+    ) : WebUiEvent
 }

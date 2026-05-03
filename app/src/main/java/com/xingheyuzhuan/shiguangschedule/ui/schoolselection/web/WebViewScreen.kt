@@ -70,8 +70,12 @@ import com.xingheyuzhuan.shiguangschedule.BuildConfig
 import com.xingheyuzhuan.shiguangschedule.Destination
 import com.xingheyuzhuan.shiguangschedule.R
 import com.xingheyuzhuan.shiguangschedule.ui.components.CourseTablePickerDialog
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
+import androidx.biometric.BiometricPrompt
+import androidx.compose.runtime.collectAsState
+import androidx.fragment.app.FragmentActivity
+import com.xingheyuzhuan.shiguangschedule.data.security.BiometricAuthHelper
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,8 +88,11 @@ fun WebViewScreen(
     viewModel: WebViewModel = hiltViewModel()
 ) {
     val courseConversionRepository = viewModel.courseConversionRepository
+    val appSettings by viewModel.appSettings.collectAsState(initial = null)
 
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
+    val biometricHelper = remember(activity) { activity?.let { BiometricAuthHelper(it) } }
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -136,8 +143,8 @@ fun WebViewScreen(
     // --- 浏览器配置和 Agent ---
     val defaultUserAgent = remember { WebSettings.getDefaultUserAgent(context) }
 
-    // --- Channel 和 Bridge 实例化 ---
-    val uiEventChannel = remember { Channel<WebUiEvent>(Channel.BUFFERED) }
+    // --- UI 事件流与 Bridge 实例化 ---
+    val uiEvents = remember { MutableSharedFlow<WebUiEvent>(extraBufferCapacity = 1) }
     var androidBridge: AndroidBridge? by remember { mutableStateOf(null) }
 
     val webView = remember {
@@ -152,7 +159,7 @@ fun WebViewScreen(
                 context = context,
                 coroutineScope = coroutineScope,
                 webView = this,
-                uiEventChannel = uiEventChannel,
+                uiEventChannel = uiEvents,
                 courseConversionRepository = courseConversionRepository,
                 onTaskCompleted = {
                     Toast.makeText(context, toastImportFinished, Toast.LENGTH_LONG).show()
@@ -332,6 +339,63 @@ fun WebViewScreen(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
+                            val hasSavedCredentials = appSettings?.encryptedCredentials?.isNotEmpty() == true
+                            if (hasSavedCredentials) {
+                                DropdownMenuItem(
+                                    text = { Text("自动填充密码") },
+                                    onClick = {
+                                        expanded = false
+                                        val iv = appSettings?.credentialsIv ?: return@DropdownMenuItem
+                                        val encrypted = appSettings?.encryptedCredentials ?: return@DropdownMenuItem
+                                        
+                                        try {
+                                            val cipher = viewModel.getCipherForDecryption(iv)
+                                            biometricHelper?.authenticate(
+                                                cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                                                title = "自动填充",
+                                                subtitle = "请验证指纹、PIN或锁屏图案"
+                                            ) { result ->
+                                                when (result) {
+                                                    is BiometricAuthHelper.AuthResult.Success -> {
+                                                        val decryptedCipher = result.cryptoObject?.cipher
+                                                        if (decryptedCipher != null) {
+                                                            viewModel.decryptCredentials(decryptedCipher, encrypted)?.let { (u, p) ->
+                                                                webView.evaluateJavascript(getAutofillJs(u, p), null)
+                                                            }
+                                                        } else {
+                                                            Toast.makeText(context, "未能获取授权，请使用指纹或重新保存", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                    is BiometricAuthHelper.AuthResult.Error -> {
+                                                        if (result.code != BiometricPrompt.ERROR_USER_CANCELED && result.code != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                                                            Toast.makeText(context, "验证出错: ${result.message}", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                    is BiometricAuthHelper.AuthResult.Failed -> {
+                                                        Toast.makeText(context, "验证失败", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            if (viewModel.secureCredentialManager.isKeyInvalidated(e)) {
+                                                Toast.makeText(context, "生物识别信息已更改，请重新保存密码", Toast.LENGTH_LONG).show()
+                                                coroutineScope.launch { viewModel.clearCredentials() }
+                                            }
+                                        }
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.PhoneAndroid, contentDescription = null) }
+                                )
+                            }
+
+                            DropdownMenuItem(
+                                text = { Text("保存当前账号") },
+                                onClick = {
+                                    expanded = false
+                                    webView.evaluateJavascript(JS_CAPTURE_CREDENTIALS, null)
+                                },
+                                leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) }
+                            )
+
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_refresh)) },
                                 onClick = { webView.reload(); expanded = false },
@@ -444,8 +508,48 @@ fun WebViewScreen(
 
             WebDialogHost(
                 webView = webView,
-                uiEvents = uiEventChannel.receiveAsFlow()
+                uiEvents = uiEvents
             )
+
+            // 处理凭据保存请求
+            LaunchedEffect(uiEvents) {
+                uiEvents.collect { event ->
+                    if (event is WebUiEvent.RequestSaveCredentials) {
+                        try {
+                            val cipher = viewModel.getCipherForEncryption()
+                            biometricHelper?.authenticate(
+                                cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                                title = "保存凭据",
+                                subtitle = "请验证指纹、PIN或锁屏图案"
+                            ) { result ->
+                                when (result) {
+                                    is BiometricAuthHelper.AuthResult.Success -> {
+                                        val authenticatedCipher = result.cryptoObject?.cipher
+                                        if (authenticatedCipher != null) {
+                                            coroutineScope.launch {
+                                                viewModel.saveCredentials(event.username, event.password, authenticatedCipher)
+                                                Toast.makeText(context, "账号密码已加密保存", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(context, "未能获取加密授权，请重试", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    is BiometricAuthHelper.AuthResult.Error -> {
+                                        if (result.code != BiometricPrompt.ERROR_USER_CANCELED && result.code != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                                            Toast.makeText(context, "保存失败: ${result.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    is BiometricAuthHelper.AuthResult.Failed -> {
+                                        Toast.makeText(context, "验证失败，无法保存", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "无法初始化加密器: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
 
             if (showCourseTablePicker) {
                 CourseTablePickerDialog(

@@ -151,6 +151,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
     implementation(libs.wire.runtime)
+    implementation(libs.androidx.biometric)
 
 
     debugImplementation(libs.okhttp.logging.interceptor)

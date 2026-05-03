@@ -73,6 +73,10 @@ fun WebDialogHost(
                 currentEvent = null
             })
         }
+        is WebUiEvent.RequestSaveCredentials -> {
+            // 此事件由 WebViewScreen 中的 LaunchedEffect 处理，这里直接忽略并重置状态
+            currentEvent = null
+        }
         null -> Unit
     }
 }

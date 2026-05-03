@@ -116,6 +116,12 @@ data class AppSettingsModel(
     /** * 自定义深色主题主色
      */
     val customDarkPrimary: Long = Purple80.toArgb().toLong(),
+
+    /** 加密的教务系统凭据数据 (Base64) */
+    val encryptedCredentials: String = "",
+
+    /** 加密凭据时使用的 IV (Base64) */
+    val credentialsIv: String = "",
 ) {
     /**
      * 将 DataStore 的 Key 定义在伴生对象中。
@@ -136,6 +142,8 @@ data class AppSettingsModel(
         val KEY_USE_DYNAMIC_COLOR = booleanPreferencesKey("use_dynamic_color")
         val KEY_CUSTOM_LIGHT_PRIMARY = longPreferencesKey("custom_light_primary")
         val KEY_CUSTOM_DARK_PRIMARY = longPreferencesKey("custom_dark_primary")
+        val KEY_ENCRYPTED_CREDENTIALS = stringPreferencesKey("encrypted_credentials")
+        val KEY_CREDENTIALS_IV = stringPreferencesKey("credentials_iv")
 
         /**
          * 从 Preferences 中解析出 AppSettingsModel
@@ -156,6 +164,8 @@ data class AppSettingsModel(
                 useDynamicColor = prefs[KEY_USE_DYNAMIC_COLOR] ?: d.useDynamicColor,
                 customLightPrimary = prefs[KEY_CUSTOM_LIGHT_PRIMARY] ?: d.customLightPrimary,
                 customDarkPrimary = prefs[KEY_CUSTOM_DARK_PRIMARY] ?: d.customDarkPrimary,
+                encryptedCredentials = prefs[KEY_ENCRYPTED_CREDENTIALS] ?: d.encryptedCredentials,
+                credentialsIv = prefs[KEY_CREDENTIALS_IV] ?: d.credentialsIv,
             )
         }
     }

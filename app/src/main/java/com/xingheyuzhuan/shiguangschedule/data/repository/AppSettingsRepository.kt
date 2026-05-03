@@ -87,6 +87,28 @@ class AppSettingsRepository @Inject constructor(
             prefs[AppSettingsModel.KEY_USE_DYNAMIC_COLOR] = newSettings.useDynamicColor
             prefs[AppSettingsModel.KEY_CUSTOM_LIGHT_PRIMARY] = newSettings.customLightPrimary
             prefs[AppSettingsModel.KEY_CUSTOM_DARK_PRIMARY] = newSettings.customDarkPrimary
+            prefs[AppSettingsModel.KEY_ENCRYPTED_CREDENTIALS] = newSettings.encryptedCredentials
+            prefs[AppSettingsModel.KEY_CREDENTIALS_IV] = newSettings.credentialsIv
+        }
+    }
+
+    /**
+     * 保存加密后的凭据
+     */
+    suspend fun saveCredentials(encryptedData: String, iv: String) {
+        dataStore.edit { prefs ->
+            prefs[AppSettingsModel.KEY_ENCRYPTED_CREDENTIALS] = encryptedData
+            prefs[AppSettingsModel.KEY_CREDENTIALS_IV] = iv
+        }
+    }
+
+    /**
+     * 清除凭据
+     */
+    suspend fun clearCredentials() {
+        dataStore.edit { prefs ->
+            prefs.remove(AppSettingsModel.KEY_ENCRYPTED_CREDENTIALS)
+            prefs.remove(AppSettingsModel.KEY_CREDENTIALS_IV)
         }
     }
 
