@@ -44,15 +44,31 @@ class WebCompatDelegate(private val webView: WebView) {
      * 包装 WebViewClient，统一控制 JS 注入流程
      */
     fun wrapWebViewClient(original: WebViewClient, isDesktopMode: Boolean): WebViewClient {
+        val interceptor = WebViewRequestInterceptor()
         return object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                if (request != null) {
+                    val interceptedResponse = interceptor.intercept(request)
+                    if (interceptedResponse != null) {
+                        return interceptedResponse
+                    }
+                }
+                return super.shouldInterceptRequest(view, request)
+            }
+
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 original.onPageStarted(view, url, favicon)
+                // Also inject onPageStarted to catch early requests
+                view?.evaluateJavascript(JS_INTERCEPT_POST, null)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 original.onPageFinished(view, url)
 
                 view?.let { wv ->
+                    // Inject POST interception JS as early as possible on every page
+                    wv.evaluateJavascript(JS_INTERCEPT_POST, null)
+
                     if (isDesktopMode) {
                         injectDesktopCompatLayer(wv)
                     }

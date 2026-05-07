@@ -12,7 +12,6 @@ import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionReposi
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseImportExport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -21,13 +20,13 @@ private const val TAG = "AndroidBridge"
 
 /**
  * AndroidBridge：处理 WebView 与 Native 代码的通信。
- * 通过 Channel 发送 WebUiEvent，实现与 Compose UI 的解耦。
+ * 使用 SharedFlow 暴露 Web 逻辑层事件，实现与 Compose UI 的解耦。
  */
 class AndroidBridge(
     private val context: Context,
     private val coroutineScope: CoroutineScope,
     private val webView: WebView,
-    private val uiEventChannel: Channel<WebUiEvent>,
+    private val uiEventChannel: kotlinx.coroutines.channels.SendChannel<WebUiEvent>,
     private val courseConversionRepository: CourseConversionRepository,
     private val onTaskCompleted: () -> Unit
 ) {
@@ -66,12 +65,8 @@ class AndroidBridge(
                 }
             }
 
-            val success = uiEventChannel.trySend(
-                WebUiEvent.ShowAlert(data, promiseCallback)
-            ).isSuccess
-
-            if (!success) {
-                rejectJsPromise(promiseId, "原生 UI 事件队列已满。")
+            coroutineScope.launch {
+                uiEventChannel.send(WebUiEvent.ShowAlert(data, promiseCallback))
             }
         }
     }
@@ -135,13 +130,8 @@ class AndroidBridge(
                 }
             }
 
-            // 发送事件
-            val success = uiEventChannel.trySend(
-                WebUiEvent.ShowPrompt(data, onRequestValidation, errorFlow.asSharedFlow(), onCancel)
-            ).isSuccess
-
-            if (!success) {
-                rejectJsPromise(promiseId, "原生 UI 事件队列已满。")
+            coroutineScope.launch {
+                uiEventChannel.send(WebUiEvent.ShowPrompt(data, onRequestValidation, errorFlow.asSharedFlow(), onCancel))
             }
         }
     }
@@ -167,12 +157,8 @@ class AndroidBridge(
                     }
                 }
 
-                val success = uiEventChannel.trySend(
-                    WebUiEvent.ShowSingleSelection(data, promiseCallback)
-                ).isSuccess
-
-                if (!success) {
-                    rejectJsPromise(promiseId, "原生 UI 事件队列已满。")
+                coroutineScope.launch {
+                    uiEventChannel.send(WebUiEvent.ShowSingleSelection(data, promiseCallback))
                 }
 
             } catch (e: Exception) {
@@ -281,6 +267,11 @@ class AndroidBridge(
             importTableId = null
             onTaskCompleted()
         }
+    }
+
+    @JavascriptInterface
+    fun registerPostData(id: String, body: String, contentType: String) {
+        WebViewRequestInterceptor.registerPostData(id, body, contentType)
     }
 
     /** 在 JS 环境中解决 Promise。 */
