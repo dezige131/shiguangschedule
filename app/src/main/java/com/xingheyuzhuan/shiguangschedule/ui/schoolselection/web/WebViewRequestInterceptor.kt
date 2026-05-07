@@ -17,8 +17,9 @@ class WebViewRequestInterceptor {
         private val clientWithRedirects = OkHttpClient.Builder()
             .followRedirects(true)
             .followSslRedirects(true)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS) // 增加超时时间以提高稳定性
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
 
         private val clientNoRedirects = clientWithRedirects.newBuilder()
@@ -38,33 +39,53 @@ class WebViewRequestInterceptor {
 
     private val cookieManager = CookieManager.getInstance()
 
-    fun intercept(request: WebResourceRequest): WebResourceResponse? {
-        val url = request.url.toString()
+    /**
+     * @param isDesktopMode 仅在电脑模式开启时执行拦截
+     */
+    fun intercept(request: WebResourceRequest, isDesktopMode: Boolean): WebResourceResponse? {
+        val rawUrl = request.url.toString()
         
-        // Skip non-http(s) urls
-        if (!url.startsWith("http")) return null
+        // 跳过非 http(s) 链接
+        if (!rawUrl.startsWith("http")) return null
         
-        // 1. Check for registered POST body ID (from JS)
+        // 关键改进：仅在电脑模式下处理，手机模式直接返回 null 让 WebView 原生处理
+        if (!isDesktopMode) return null
+
+        // 1. 检查注册的 POST Body ID
         val requestIdHeader = request.requestHeaders["X-WebView-Post-Id"]
         val requestIdParam = request.url.getQueryParameter("_webview_post_id")
         val requestId = requestIdHeader ?: requestIdParam
         
+        // --- 改进：URL 去污染逻辑 ---
+        // 在转发前从 URL 中剔除我们的内部参数，确保服务器收到纯净的地址
+        val url = if (requestIdParam != null) {
+            val uriBuilder = request.url.buildUpon().clearQuery()
+            request.url.queryParameterNames.forEach { name ->
+                if (name != "_webview_post_id") {
+                    request.url.getQueryParameters(name).forEach { value ->
+                        uriBuilder.appendQueryParameter(name, value)
+                    }
+                }
+            }
+            uriBuilder.build().toString()
+        } else {
+            rawUrl
+        }
+
         val registeredData = requestId?.let { postBodyRegistry.remove(it) }
 
-        // If it's a POST and we DON'T have a registered body, we can't strip the header reliably 
-        // unless we let WebView handle it (which fails the user's requirement).
-        // But if we HAVE a registered body, we MUST intercept regardless of method.
+        // 如果是 POST 但没有注册 Body，我们无法处理
         if (request.method.uppercase() != "GET" && registeredData == null) {
             return null
         }
 
-        // For main frame, we want to handle redirects manually to update WebView's URL state via JS
+        // 主框架使用 clientNoRedirects，子资源使用 clientWithRedirects
         val client = if (request.isForMainFrame) clientNoRedirects else clientWithRedirects
 
         try {
             val builder = Request.Builder().url(url)
             
-            // 2. Set Method and Body
+            // 2. 设置请求方法和 Body
             if (registeredData != null) {
                 val mediaType = registeredData.contentType.ifBlank { "application/x-www-form-urlencoded" }.toMediaTypeOrNull()
                 val body = registeredData.body.toRequestBody(mediaType)
@@ -73,7 +94,7 @@ class WebViewRequestInterceptor {
                 builder.method(request.method, null)
             }
 
-            // 3. Copy headers from WebView, excluding X-Requested-With and our internal ID header
+            // 3. 复制头部，剔除 X-Requested-With 和内部 ID 头部
             request.requestHeaders.forEach { (key, value) ->
                 if (!key.equals("X-Requested-With", ignoreCase = true) && 
                     !key.equals("X-WebView-Post-Id", ignoreCase = true)) {
@@ -81,7 +102,7 @@ class WebViewRequestInterceptor {
                 }
             }
 
-            // 4. Sync Cookies from WebView to OkHttp
+            // 4. 同步 WebView 的 Cookie 到 OkHttp
             val cookies = cookieManager.getCookie(url)
             if (!cookies.isNullOrEmpty()) {
                 builder.addHeader("Cookie", cookies)
@@ -89,14 +110,14 @@ class WebViewRequestInterceptor {
 
             val response = client.newCall(builder.build()).execute()
 
-            // 5. Sync Cookies from OkHttp back to WebView
+            // 5. 同步 OkHttp 的 Cookie 回 WebView
             val responseHeaders = response.headers
             responseHeaders.values("Set-Cookie").forEach {
                 cookieManager.setCookie(url, it)
             }
             cookieManager.flush()
 
-            // 6. Handle Redirects (3xx) for main frame
+            // 6. 处理重定向 (WebResourceResponse 不支持 3xx)
             if (response.code in 300..399) {
                 if (request.isForMainFrame) {
                     val location = response.header("Location")
@@ -114,11 +135,12 @@ class WebViewRequestInterceptor {
                         )
                     }
                 }
+                response.body.close()
                 response.close()
                 return null
             }
 
-            // 7. Construct WebResourceResponse
+            // 7. 构造 WebResourceResponse
             val contentType = response.header("Content-Type")
             val mimeType = contentType?.substringBefore(";") ?: "text/html"
             val encoding = contentType?.substringAfter("charset=", "UTF-8") ?: "UTF-8"
@@ -126,12 +148,12 @@ class WebViewRequestInterceptor {
             val responseHeadersMap = mutableMapOf<String, String>()
             for (i in 0 until responseHeaders.size) {
                 val name = responseHeaders.name(i)
-                // Don't pass through Content-Encoding (like gzip) as WebView handles it differently
                 if (!name.equals("Content-Encoding", ignoreCase = true)) {
                     responseHeadersMap[name] = responseHeaders.value(i)
                 }
             }
 
+            // 重要：不要在这里立即调用 response.close()，让 WebView 消耗完数据流
             return WebResourceResponse(
                 mimeType,
                 encoding,
