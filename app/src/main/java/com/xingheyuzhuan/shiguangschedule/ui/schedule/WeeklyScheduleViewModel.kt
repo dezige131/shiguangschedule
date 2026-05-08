@@ -376,8 +376,19 @@ class WeeklyScheduleViewModel @Inject constructor(
         val isVisualDemoted = currentWeekCoursesCount == 0
         val hasNonCurrentWeekCourses = hasNonCurrentWeekCoursesExist && totalCoursesCount > 1
 
-        val minS = group.minOf { it.start }
-        val maxE = group.maxOf { it.end }
+        val currentWeekNormalized = group.filter { it.raw.weeks.any { w -> w.weekNumber == currentWeek } }
+        val minS: Float
+        val maxE: Float
+
+        if (currentWeekNormalized.isNotEmpty()) {
+            // 如果存在本周课程，颜色块大小优先以本周课程为准
+            minS = currentWeekNormalized.minOf { it.start }
+            maxE = currentWeekNormalized.maxOf { it.end }
+        } else {
+            // 否则（全部为非本周课程时），取所有课程的并集
+            minS = group.minOf { it.start }
+            maxE = group.maxOf { it.end }
+        }
 
         return MergedCourseBlock(
             day = day,
