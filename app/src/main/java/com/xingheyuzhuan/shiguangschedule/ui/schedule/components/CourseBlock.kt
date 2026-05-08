@@ -180,7 +180,7 @@ fun CourseBlock(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.label_courses_overlap, mergedBlock.courses.size),
+                        text = stringResource(R.string.label_courses_overlap, mergedBlock.currentWeekCoursesCount),
                         fontSize = s13,
                         fontWeight = FontWeight.Black,
                         color = textColor,
@@ -261,7 +261,7 @@ fun CourseBlock(
                 // 开启样式切换后，在文字内容下方追加重叠提示
                 if (mergedBlock.isConflict) {
                     Text(
-                        text = stringResource(R.string.label_courses_overlap, mergedBlock.courses.size),
+                        text = stringResource(R.string.label_courses_overlap, mergedBlock.currentWeekCoursesCount),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = textColor.copy(alpha = 0.9f),

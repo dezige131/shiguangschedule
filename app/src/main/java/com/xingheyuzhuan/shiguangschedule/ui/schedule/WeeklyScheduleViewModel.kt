@@ -42,7 +42,8 @@ data class MergedCourseBlock(
     val isConflict: Boolean = false,
     val hasNonCurrentWeekCourses: Boolean = false,
     val needsProportionalRendering: Boolean = false,
-    val isVisualDemoted: Boolean = false
+    val isVisualDemoted: Boolean = false,
+    val currentWeekCoursesCount: Int = 0
 )
 
 data class WeeklyScheduleUiState(
@@ -398,7 +399,8 @@ class WeeklyScheduleViewModel @Inject constructor(
             isConflict = isConflict,
             hasNonCurrentWeekCourses = hasNonCurrentWeekCourses,
             needsProportionalRendering = group.any { it.raw.course.isCustomTime },
-            isVisualDemoted = isVisualDemoted
+            isVisualDemoted = isVisualDemoted,
+            currentWeekCoursesCount = currentWeekCoursesCount
         )
     }
 }
