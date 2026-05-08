@@ -318,7 +318,8 @@ class StyleSettingsViewModel @Inject constructor(
                 day = 1,
                 startSection = 0f,
                 endSection = 2f,
-                courses = listOf(CourseWithWeeks(courseA, emptyList()))
+                courses = listOf(CourseWithWeeks(courseA, emptyList())),
+                currentWeekCoursesCount = 1
             ),
 
             // 自定义时间：动态计算逻辑位置
@@ -326,7 +327,8 @@ class StyleSettingsViewModel @Inject constructor(
                 day = 2,
                 startSection = getLogicalPosition("09:50"),
                 endSection = getLogicalPosition("11:30"),
-                courses = listOf(CourseWithWeeks(courseB, emptyList()))
+                courses = listOf(CourseWithWeeks(courseB, emptyList())),
+                currentWeekCoursesCount = 1
             ),
 
             // 冲突课程：第 1 节起(0.0)，第 2 节止(2.0)
@@ -335,7 +337,8 @@ class StyleSettingsViewModel @Inject constructor(
                 startSection = 0f,
                 endSection = 2f,
                 courses = listOf(CourseWithWeeks(courseC1, emptyList()), CourseWithWeeks(courseC2, emptyList())),
-                isConflict = true
+                isConflict = true,
+                currentWeekCoursesCount = 2
             )
         )
     }

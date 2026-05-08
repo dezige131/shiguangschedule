@@ -75,8 +75,13 @@ fun CourseBlock(
     }
 
     // --- 冲突颜色列表提取 ---
-    val conflictColors = remember(mergedBlock.courses, isDarkTheme) {
-        mergedBlock.courses.map { cw ->
+    val conflictColors = remember(mergedBlock.courses, mergedBlock.currentWeekCoursesCount, isDarkTheme) {
+        val targetCourses = if (mergedBlock.currentWeekCoursesCount > 0) {
+            mergedBlock.courses.take(mergedBlock.currentWeekCoursesCount)
+        } else {
+            mergedBlock.courses
+        }
+        targetCourses.map { cw ->
             val idx = cw.course.colorInt.coerceIn(style.courseColorMaps.indices)
             if (isDarkTheme) style.courseColorMaps[idx].dark else style.courseColorMaps[idx].light
         }
