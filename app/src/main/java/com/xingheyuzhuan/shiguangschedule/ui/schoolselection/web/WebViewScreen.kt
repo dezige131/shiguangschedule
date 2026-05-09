@@ -160,6 +160,7 @@ fun WebViewScreen(
                 }
             )
             addJavascriptInterface(androidBridge!!, "AndroidBridge")
+            addJavascriptInterface(WebPostBridge(), "WebPostService")
         }
     }
 

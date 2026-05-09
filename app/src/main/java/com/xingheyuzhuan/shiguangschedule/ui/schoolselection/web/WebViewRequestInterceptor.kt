@@ -2,11 +2,11 @@ package com.xingheyuzhuan.shiguangschedule.ui.schoolselection.web
 
 import android.util.Log
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -166,5 +166,15 @@ class WebViewRequestInterceptor {
             Log.e("WebViewInterceptor", "Error intercepting request: $url", e)
             return null
         }
+    }
+}
+
+/**
+ * 专门用于网络拦截的内部桥接，不属于业务 API。
+ */
+class WebPostBridge {
+    @JavascriptInterface
+    fun register(id: String, body: String, type: String) {
+        WebViewRequestInterceptor.registerPostData(id, body, type)
     }
 }

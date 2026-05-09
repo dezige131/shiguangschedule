@@ -12,6 +12,7 @@ import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionReposi
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseImportExport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ class AndroidBridge(
     private val context: Context,
     private val coroutineScope: CoroutineScope,
     private val webView: WebView,
-    private val uiEventChannel: kotlinx.coroutines.channels.SendChannel<WebUiEvent>,
+    private val uiEventChannel: SendChannel<WebUiEvent>,
     private val courseConversionRepository: CourseConversionRepository,
     private val onTaskCompleted: () -> Unit
 ) {
@@ -267,11 +268,6 @@ class AndroidBridge(
             importTableId = null
             onTaskCompleted()
         }
-    }
-
-    @JavascriptInterface
-    fun registerPostData(id: String, body: String, contentType: String) {
-        WebViewRequestInterceptor.registerPostData(id, body, contentType)
     }
 
     /** 在 JS 环境中解决 Promise。 */

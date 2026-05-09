@@ -14,8 +14,10 @@ val JS_INTERCEPT_POST = """
     var requestIdParam = '_webview_post_id';
 
     function register(id, body, contentType) {
-        bridge.registerPostData(id, body, contentType || '');
+    if (window.WebPostService) {
+        window.WebPostService.register(id, body, contentType || '');
     }
+}
 
     // --- 1. XMLHttpRequest Interception ---
     var oldOpen = XMLHttpRequest.prototype.open;
