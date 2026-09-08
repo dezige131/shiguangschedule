@@ -232,6 +232,17 @@ class AddEditCourseViewModel(
         }
     }
 
+    /**
+     * 将当前页面中的所有课程方案统一设置为指定颜色索引
+     */
+    fun updateAllSchemesColor(colorIndex: Int) {
+        _uiState.update { state ->
+            state.copy(
+                schemes = state.schemes.map { it.copy(colorIndex = colorIndex) }
+            )
+        }
+    }
+
     fun onSchemeRemarkChange(schemeId: String, remark: String) {
         if (remark.length <= 300) {
             updateScheme(schemeId) { it.copy(remark = remark) }

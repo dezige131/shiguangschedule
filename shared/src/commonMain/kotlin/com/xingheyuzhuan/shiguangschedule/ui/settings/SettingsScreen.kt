@@ -64,10 +64,10 @@ import shiguangschedule.shared.generated.resources.desc_more_options
 import shiguangschedule.shared.generated.resources.desc_notification_settings
 import shiguangschedule.shared.generated.resources.desc_personalization
 import shiguangschedule.shared.generated.resources.desc_quick_actions
+import shiguangschedule.shared.generated.resources.desc_schedule_management
 import shiguangschedule.shared.generated.resources.desc_set_start_date
 import shiguangschedule.shared.generated.resources.desc_show_non_current_week
 import shiguangschedule.shared.generated.resources.desc_show_weekends
-import shiguangschedule.shared.generated.resources.desc_time_slot_customization
 import shiguangschedule.shared.generated.resources.desc_total_weeks
 import shiguangschedule.shared.generated.resources.dialog_title_manual_set_week
 import shiguangschedule.shared.generated.resources.dialog_title_select_total_weeks
@@ -82,7 +82,6 @@ import shiguangschedule.shared.generated.resources.item_quick_actions
 import shiguangschedule.shared.generated.resources.item_set_start_date
 import shiguangschedule.shared.generated.resources.item_show_non_current_week
 import shiguangschedule.shared.generated.resources.item_show_weekends
-import shiguangschedule.shared.generated.resources.item_time_slot_customization
 import shiguangschedule.shared.generated.resources.item_total_weeks
 import shiguangschedule.shared.generated.resources.more_horiz_24px
 import shiguangschedule.shared.generated.resources.section_title_advanced_features
@@ -93,6 +92,7 @@ import shiguangschedule.shared.generated.resources.status_set_start_date_first
 import shiguangschedule.shared.generated.resources.status_total_weeks_format
 import shiguangschedule.shared.generated.resources.title_course_notification_settings
 import shiguangschedule.shared.generated.resources.title_manage_course_tables
+import shiguangschedule.shared.generated.resources.title_schedule_management
 import shiguangschedule.shared.generated.resources.title_schedule_settings
 import shiguangschedule.shared.generated.resources.title_vacation
 
@@ -402,8 +402,8 @@ private fun AdvancedSettingsSection(onNavigate: (Destination) -> Unit) {
                 onClick = { onNavigate(Destination.CourseManagementList) }
             )
             SettingItem(
-                title = stringResource(Res.string.item_time_slot_customization),
-                subtitle = stringResource(Res.string.desc_time_slot_customization),
+                title = stringResource(Res.string.title_schedule_management),
+                subtitle = stringResource(Res.string.desc_schedule_management),
                 onClick = { onNavigate(Destination.TimeScheduleManagement) }
             )
             SettingItem(

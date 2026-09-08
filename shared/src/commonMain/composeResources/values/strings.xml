@@ -73,6 +73,7 @@
     <string name="label_start_time">开始时间</string>
     <string name="label_end_time">结束时间</string>
     <string name="label_remark">备注</string>
+    <string name="action_apply_to_all_schemes">应用到所有方案</string>
 
     <!-- 课程相关 -->
     <string name="course_time_description">时间: 第%1$s-%2$s节 (%3$s-%4$s)</string>
@@ -216,8 +217,6 @@
     <string name="desc_course_conversion">支持文件、教务导入及同步功能</string>
     <string name="desc_notification_settings">管理您的课程提醒通知</string>
     <string name="desc_manage_course_tables">管理多份课程表，可切换、删除</string>
-    <string name="item_time_slot_customization">自定义时间段</string>
-    <string name="desc_time_slot_customization">编辑您的课程时间段设置</string>
     <string name="item_more_options">更多</string>
     <string name="desc_more_options">提供我们的更多信息</string>
     <string name="a11y_more_options">更多选项</string>
@@ -305,6 +304,7 @@
 
     <!-- 作息方案管理 -->
     <string name="title_schedule_management">作息方案管理</string>
+    <string name="desc_schedule_management">支持公共作息和组合作息</string>
     <string name="a11y_add_schedule_scheme">新增方案</string>
     <string name="action_add_public_schedule">新增公共作息</string>
     <string name="action_add_combo_schedule">新增组合作息</string>
