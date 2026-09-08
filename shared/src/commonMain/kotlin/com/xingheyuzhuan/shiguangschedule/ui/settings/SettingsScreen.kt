@@ -404,7 +404,7 @@ private fun AdvancedSettingsSection(onNavigate: (Destination) -> Unit) {
             SettingItem(
                 title = stringResource(Res.string.item_time_slot_customization),
                 subtitle = stringResource(Res.string.desc_time_slot_customization),
-                onClick = { onNavigate(Destination.TimeSlotSettings) }
+                onClick = { onNavigate(Destination.TimeScheduleManagement) }
             )
             SettingItem(
                 title = stringResource(Res.string.item_personalization),

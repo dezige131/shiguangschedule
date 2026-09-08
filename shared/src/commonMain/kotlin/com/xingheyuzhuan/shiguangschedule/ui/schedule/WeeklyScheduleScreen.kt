@@ -422,7 +422,7 @@ fun WeeklyScheduleScreen(
                             }
 
                             override fun onTimeSlotClicked() {
-                                onNavigate(Destination.TimeSlotSettings)
+                                onNavigate(Destination.TimeScheduleManagement)
                             }
 
                             override fun onHoldStateChanged(isHolding: Boolean) {

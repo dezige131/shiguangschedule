@@ -46,7 +46,9 @@ import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.delete.QuickD
 import com.xingheyuzhuan.shiguangschedule.ui.settings.quickactions.tweaks.TweakScheduleScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.style.StyleSettingsScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.themesettings.ThemeSettingsScreen
-import com.xingheyuzhuan.shiguangschedule.ui.settings.time.TimeSlotManagementScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.time.ComboScheduleEditScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.time.SingleScheduleEditScreen
+import com.xingheyuzhuan.shiguangschedule.ui.settings.time.TimeScheduleManagementScreen
 import com.xingheyuzhuan.shiguangschedule.ui.settings.update.UpdateRepoScreen
 import com.xingheyuzhuan.shiguangschedule.ui.theme.ShiguangScheduleTheme
 import com.xingheyuzhuan.shiguangschedule.ui.today.TodayScheduleScreen
@@ -167,7 +169,6 @@ fun ScreenContent(
         Destination.CourseSchedule -> WeeklyScheduleScreen(onNavigate, onBack)
         Destination.Settings -> SettingsScreen(onNavigate, onBack)
         Destination.TodaySchedule -> TodayScheduleScreen(onNavigate, onBack)
-        Destination.TimeSlotSettings -> TimeSlotManagementScreen(onBack)
         Destination.ManageCourseTables -> ManageCourseTablesScreen(onBack)
         Destination.SchoolSelectionListScreen -> SchoolSelectionListScreen(onNavigate, onBack)
         Destination.CourseTableConversion -> CourseTableConversionScreen(onNavigate, onBack)
@@ -184,6 +185,31 @@ fun ScreenContent(
         Destination.ThemeSettings -> ThemeSettingsScreen(onBack)
         Destination.BackupAndRestore -> BackupScreen(onBack)
         Destination.LanguageSettings -> LanguageSettingScreen(onBack)
+
+        Destination.TimeScheduleManagement -> TimeScheduleManagementScreen(
+            onBack = onBack,
+            onEditSingleSchedule = { tableId, isPublic, copyFromId ->
+                onNavigate(Destination.SingleScheduleEdit(tableId, isPublic, copyFromId))
+            },
+            onEditComboSchedule = { comboId, copyFromId ->
+                onNavigate(Destination.ComboScheduleEdit(comboId, copyFromId))
+            }
+        )
+
+        // 单一/公共作息编辑页面路由
+        is Destination.SingleScheduleEdit -> SingleScheduleEditScreen(
+            tableId = targetDest.tableId,
+            isPublic = targetDest.isPublic,
+            copyFromId = targetDest.copyFromId,
+            onBack = onBack
+        )
+
+        // 组合作息编辑页面路由
+        is Destination.ComboScheduleEdit -> ComboScheduleEditScreen(
+            comboId = targetDest.comboId,
+            copyFromId = targetDest.copyFromId,
+            onBack = onBack
+        )
 
         is Destination.AdapterSelection -> AdapterSelectionScreen(
             onNavigate, onBack, targetDest.schoolId, targetDest.schoolName, targetDest.categoryNumber, targetDest.resourceFolder

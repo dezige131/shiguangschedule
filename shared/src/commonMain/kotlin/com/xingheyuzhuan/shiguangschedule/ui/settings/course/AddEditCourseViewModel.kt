@@ -8,7 +8,7 @@ import com.xingheyuzhuan.shiguangschedule.data.model.DualColor
 import com.xingheyuzhuan.shiguangschedule.data.repository.AppSettingsRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseTableRepository
 import com.xingheyuzhuan.shiguangschedule.data.repository.StyleSettingsRepository
-import com.xingheyuzhuan.shiguangschedule.data.repository.TimeSlotRepository
+import com.xingheyuzhuan.shiguangschedule.data.repository.TimeScheduleRepository
 import com.xingheyuzhuan.shiguangschedule.navigation.AddEditCourseChannel
 import com.xingheyuzhuan.shiguangschedule.navigation.PresetCourseData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,7 +24,10 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.core.annotation.KoinViewModel
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 data class CourseScheme(
@@ -47,7 +50,7 @@ data class CourseScheme(
 @KoinViewModel
 class AddEditCourseViewModel(
     private val courseTableRepository: CourseTableRepository,
-    private val timeSlotRepository: TimeSlotRepository,
+    private val timeScheduleRepository: TimeScheduleRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val styleSettingsRepository: StyleSettingsRepository
 ) : ViewModel() {
@@ -80,10 +83,11 @@ class AddEditCourseViewModel(
 
             val appSettingsFlow = appSettingsRepository.getAppSettings()
             val styleFlow = styleSettingsRepository.styleFlow
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
             val timeSlotsFlow = appSettingsFlow.flatMapLatest { settings ->
                 val tid = settings.currentCourseTableId
-                timeSlotRepository.getTimeSlotsByCourseTableId(tid)
+                timeScheduleRepository.observeEffectiveTimeSlots(tid, today)
             }
 
             val courseConfigFlow = appSettingsFlow.flatMapLatest { settings ->
