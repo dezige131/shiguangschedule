@@ -286,6 +286,13 @@
     <string name="desc_export_json_with_config">匯出包含時間段設定的json課程檔案</string>
     <string name="item_export_ics_file">行事曆檔案匯出</string>
     <string name="desc_export_ics_with_alarm">匯出ics檔案，點選產生指定提醒時間參數的檔案</string>
+    <string name="item_lan_schedule_share">區域網路分享課表</string>
+    <string name="desc_lan_schedule_share">尋找同一區域網路內的時光課表裝置並傳送課表</string>
+    <string name="dialog_title_lan_share">區域網路分享</string>
+    <string name="desc_lan_share_waiting">此頁面開啟期間可接收課表。點選裝置可選擇要傳送的課表。</string>
+    <string name="text_lan_no_devices">未發現裝置，請確認兩台裝置位於同一區域網路並開啟此頁面。</string>
+    <string name="toast_lan_share_success">課表傳送成功</string>
+    <string name="error_lan_share_failed">課表傳送失敗：%1$s</string>
     <string name="section_school_import">教務匯入</string>
     <string name="item_school_system_import">教務系統匯入</string>
     <string name="desc_school_import_quick">從教務系統匯入課程，方便快捷</string>

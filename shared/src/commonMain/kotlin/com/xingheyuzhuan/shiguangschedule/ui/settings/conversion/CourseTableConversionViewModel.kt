@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xingheyuzhuan.shiguangschedule.data.model.CourseImportExport
 import com.xingheyuzhuan.shiguangschedule.data.repository.CourseConversionRepository
+import com.xingheyuzhuan.shiguangschedule.tool.LanScheduleShareService
+import com.xingheyuzhuan.shiguangschedule.tool.LanSharePeer
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +23,8 @@ import shiguangschedule.shared.generated.resources.*
  */
 @KoinViewModel
 class CourseTableConversionViewModel(
-    private val courseConversionRepository: CourseConversionRepository
+    private val courseConversionRepository: CourseConversionRepository,
+    private val lanShareService: LanScheduleShareService
 ) : ViewModel() {
 
     // UI 状态流：维护界面加载状态及各类对话框的显隐控制
@@ -31,11 +34,16 @@ class CourseTableConversionViewModel(
     // UI 事件通道：用于向前端发送一次性副作用事件（如拉起文件选择器、弹出提示消息等）
     private val _events = Channel<ConversionEvent>()
     val events = _events.receiveAsFlow()
+    val lanPeers = lanShareService.peers
+
+    private var pendingLanImport: String? = null
+    private var selectedLanPeer: LanSharePeer? = null
 
     /**
      * 点击导入按钮：显示导入课表选择对话框
      */
     fun onImportClick() {
+        pendingLanImport = null
         _uiState.value = _uiState.value.copy(showImportTableDialog = true)
     }
 
@@ -59,22 +67,62 @@ class CourseTableConversionViewModel(
         )
     }
 
-    /**
-     * 关闭所有弹窗对话框
-     */
-    fun dismissDialog() {
+    fun onLanShareClick() {
+        lanShareService.start { json ->
+            viewModelScope.launch {
+                pendingLanImport = json
+                _uiState.value = _uiState.value.copy(
+                    showLanShareDialog = false,
+                    showExportTableDialog = false,
+                    showImportTableDialog = true
+                )
+            }
+        }
+        _uiState.value = _uiState.value.copy(showLanShareDialog = true)
+        lanShareService.refresh()
+    }
+
+    fun refreshLanPeers() = lanShareService.refresh()
+
+    fun onLanPeerSelected(peer: LanSharePeer) {
+        selectedLanPeer = peer
         _uiState.value = _uiState.value.copy(
-            showImportTableDialog = false,
-            showExportTableDialog = false
+            showLanShareDialog = false,
+            showExportTableDialog = true,
+            exportType = ExportType.LAN
         )
     }
 
     /**
-     * 当用户在弹窗中选择具体某张课表进行导入时触发
+     * 关闭所有弹窗对话框
+     */
+    fun dismissDialog() {
+        pendingLanImport = null
+        _uiState.value = _uiState.value.copy(
+            showImportTableDialog = false,
+            showExportTableDialog = false,
+            showLanShareDialog = false
+        )
+    }
+
+    /**
+     * 当用户在弹窗中选择具体某个课表进行导入时触发
      */
     fun onImportTableSelected(tableId: String) {
         viewModelScope.launch {
-            _events.send(ConversionEvent.LaunchImportFilePicker(tableId))
+            val lanJson = pendingLanImport
+            if (lanJson == null) {
+                _events.send(ConversionEvent.LaunchImportFilePicker(tableId))
+            } else {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                try {
+                    importJson(tableId, lanJson)
+                } catch (_: Exception) {
+                    _events.send(ConversionEvent.ShowMessage(getString(Res.string.error_import_failed)))
+                } finally {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
+            }
             dismissDialog()
         }
     }
@@ -86,14 +134,20 @@ class CourseTableConversionViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                if (_uiState.value.exportType == ExportType.JSON) {
+                if (_uiState.value.exportType == ExportType.JSON || _uiState.value.exportType == ExportType.LAN) {
                     val jsonModel = courseConversionRepository.exportCourseTableToJson(tableId)
                     if (jsonModel != null) {
                         val jsonString = CourseImportExport.json.encodeToString(
                             CourseImportExport.CourseTableExportModel.serializer(),
                             jsonModel
                         )
-                        _events.send(ConversionEvent.LaunchExportFileCreator(jsonString))
+                        if (_uiState.value.exportType == ExportType.LAN) {
+                            val peer = selectedLanPeer ?: error("No LAN peer selected")
+                            lanShareService.send(peer, jsonString)
+                            _events.send(ConversionEvent.ShowMessage(getString(Res.string.toast_lan_share_success)))
+                        } else {
+                            _events.send(ConversionEvent.LaunchExportFileCreator(jsonString))
+                        }
                     } else {
                         val message = getString(Res.string.error_export_table_not_found)
                         _events.send(ConversionEvent.ShowMessage(message))
@@ -108,8 +162,23 @@ class CourseTableConversionViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val errorMessage = e.message ?: ""
-                val message = getString(Res.string.error_export_failed, errorMessage)
+                val errorMessage = buildString {
+                    if (_uiState.value.exportType == ExportType.LAN) {
+                        append(selectedLanPeer?.address.orEmpty())
+                        append(": ")
+                    }
+                    append(e::class.simpleName ?: "Network error")
+                    e.message?.takeIf { it.isNotBlank() }?.let {
+                        append(": ")
+                        append(it)
+                    }
+                }
+                println("LAN/export failed: $errorMessage")
+                val message = if (_uiState.value.exportType == ExportType.LAN) {
+                    getString(Res.string.error_lan_share_failed, errorMessage)
+                } else {
+                    getString(Res.string.error_export_failed, errorMessage)
+                }
                 _events.send(ConversionEvent.ShowMessage(message))
             } finally {
                 _uiState.value = _uiState.value.copy(isLoading = false)
@@ -125,12 +194,7 @@ class CourseTableConversionViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                val jsonString = source.readUtf8()
-                val importModel = CourseImportExport.json.decodeFromString<CourseImportExport.CourseTableImportModel>(jsonString)
-                courseConversionRepository.importCourseTableFromJson(tableId, importModel)
-
-                val message = getString(Res.string.toast_import_success)
-                _events.send(ConversionEvent.ShowMessage(message))
+                importJson(tableId, source.readUtf8())
             } catch (_: Exception) {
                 val message = getString(Res.string.error_import_failed)
                 _events.send(ConversionEvent.ShowMessage(message))
@@ -138,6 +202,24 @@ class CourseTableConversionViewModel(
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
+    }
+
+    private suspend fun importJson(
+        tableId: String,
+        jsonString: String,
+        regenerateCourseIds: Boolean = false
+    ) {
+        var importModel = CourseImportExport.json.decodeFromString<CourseImportExport.CourseTableImportModel>(jsonString)
+        if (regenerateCourseIds) {
+            importModel = importModel.copy(courses = importModel.courses.map { it.copy(id = null) })
+        }
+        courseConversionRepository.importCourseTableFromJson(tableId, importModel)
+        _events.send(ConversionEvent.ShowMessage(getString(Res.string.toast_import_success)))
+    }
+
+    override fun onCleared() {
+        lanShareService.stop()
+        super.onCleared()
     }
 
     /**
@@ -171,6 +253,7 @@ data class ConversionUiState(
     val isLoading: Boolean = false,
     val showImportTableDialog: Boolean = false,
     val showExportTableDialog: Boolean = false,
+    val showLanShareDialog: Boolean = false,
     val exportType: ExportType = ExportType.NONE
 )
 
@@ -180,6 +263,7 @@ data class ConversionUiState(
 enum class ExportType {
     NONE,
     JSON,
+    LAN,
     ICS
 }
 

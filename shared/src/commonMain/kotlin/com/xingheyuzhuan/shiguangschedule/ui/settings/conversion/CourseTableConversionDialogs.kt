@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import com.xingheyuzhuan.shiguangschedule.ui.components.CourseTablePickerDialog
 import com.xingheyuzhuan.shiguangschedule.ui.components.NativeNumberPicker
+import com.xingheyuzhuan.shiguangschedule.tool.LanSharePeer
 import shiguangschedule.shared.generated.resources.Res
 import shiguangschedule.shared.generated.resources.action_cancel
 import shiguangschedule.shared.generated.resources.action_next_step
@@ -19,6 +20,10 @@ import shiguangschedule.shared.generated.resources.dialog_title_ics_export_setti
 import shiguangschedule.shared.generated.resources.dialog_title_select_export_table
 import shiguangschedule.shared.generated.resources.dialog_title_select_import_table
 import shiguangschedule.shared.generated.resources.label_select_alarm_time
+import shiguangschedule.shared.generated.resources.action_refresh
+import shiguangschedule.shared.generated.resources.desc_lan_share_waiting
+import shiguangschedule.shared.generated.resources.dialog_title_lan_share
+import shiguangschedule.shared.generated.resources.text_lan_no_devices
 
 /**
  * 闹铃提醒时间选项的本地化内部封装模型。
@@ -126,10 +131,51 @@ fun IcsExportDialog(
 @Composable
 fun ConversionDialogOverlay(
     uiState: ConversionUiState,
+    lanPeers: List<LanSharePeer>,
     onDismiss: () -> Unit,
     onConfirmImport: (String) -> Unit,
-    onConfirmExport: (String, Int?) -> Unit
+    onConfirmExport: (String, Int?) -> Unit,
+    onRefreshLanPeers: () -> Unit,
+    onLanPeerSelected: (LanSharePeer) -> Unit
 ) {
+    if (uiState.showLanShareDialog) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(Res.string.dialog_title_lan_share)) },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(Res.string.desc_lan_share_waiting))
+                    Spacer(Modifier.height(12.dp))
+                    if (lanPeers.isEmpty()) {
+                        Text(
+                            stringResource(Res.string.text_lan_no_devices),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        lanPeers.forEach { peer ->
+                            TextButton(
+                                onClick = { onLanPeerSelected(peer) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("${peer.name} (${peer.address})")
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onRefreshLanPeers) {
+                    Text(stringResource(Res.string.action_refresh))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            }
+        )
+    }
+
     if (uiState.showImportTableDialog) {
         CourseTablePickerDialog(
             title = stringResource(Res.string.dialog_title_select_import_table),
@@ -141,6 +187,13 @@ fun ConversionDialogOverlay(
     if (uiState.showExportTableDialog) {
         when (uiState.exportType) {
             ExportType.JSON -> {
+                CourseTablePickerDialog(
+                    title = stringResource(Res.string.dialog_title_select_export_table),
+                    onDismissRequest = onDismiss,
+                    onTableSelected = { onConfirmExport(it.id, null) }
+                )
+            }
+            ExportType.LAN -> {
                 CourseTablePickerDialog(
                     title = stringResource(Res.string.dialog_title_select_export_table),
                     onDismissRequest = onDismiss,

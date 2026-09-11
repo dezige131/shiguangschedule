@@ -286,6 +286,13 @@
     <string name="desc_export_json_with_config">Export JSON course file with time period configuration</string>
     <string name="item_export_ics_file">Export calendar file</string>
     <string name="desc_export_ics_with_alarm">Export ICS file with specified reminder time</string>
+    <string name="item_lan_schedule_share">Share schedule over LAN</string>
+    <string name="desc_lan_schedule_share">Find nearby Shiguang Schedule devices and send a schedule</string>
+    <string name="dialog_title_lan_share">LAN sharing</string>
+    <string name="desc_lan_share_waiting">Schedules can be received while this dialog is open. Select a device to send one.</string>
+    <string name="text_lan_no_devices">No devices found. Open this dialog on another device on the same network.</string>
+    <string name="toast_lan_share_success">Schedule sent</string>
+    <string name="error_lan_share_failed">Failed to send schedule: %1$s</string>
     <string name="section_school_import">Academic system import</string>
     <string name="item_school_system_import">Import from academic system</string>
     <string name="desc_school_import_quick">Import courses from academic system, quick and easy</string>

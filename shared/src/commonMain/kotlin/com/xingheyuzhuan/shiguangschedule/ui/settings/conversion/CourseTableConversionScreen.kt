@@ -62,9 +62,11 @@ import shiguangschedule.shared.generated.resources.item_backup_restore
 import shiguangschedule.shared.generated.resources.item_export_course_file
 import shiguangschedule.shared.generated.resources.item_export_ics_file
 import shiguangschedule.shared.generated.resources.item_import_course_file
+import shiguangschedule.shared.generated.resources.item_lan_schedule_share
 import shiguangschedule.shared.generated.resources.item_school_system_import
 import shiguangschedule.shared.generated.resources.item_sync_to_system_calendar
 import shiguangschedule.shared.generated.resources.section_file_conversion
+import shiguangschedule.shared.generated.resources.desc_lan_schedule_share
 import shiguangschedule.shared.generated.resources.section_school_import
 import shiguangschedule.shared.generated.resources.section_sync
 import shiguangschedule.shared.generated.resources.snackbar_file_save_canceled
@@ -85,6 +87,7 @@ fun CourseTableConversionScreen(
     appStorage: AppStorage = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lanPeers by viewModel.lanPeers.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -97,6 +100,7 @@ fun CourseTableConversionScreen(
     var pendingShareFilePath by remember { mutableStateOf<String?>(null) }
     var shareFilePath by remember { mutableStateOf<String?>(null) }
     var shareFileMimeType by remember { mutableStateOf("application/json") }
+    val openLanShare = rememberLanSharePermissionAction { viewModel.onLanShareClick() }
 
     val fileManager = rememberFileManager(
         callbacks = FileManagerCallbacks(
@@ -224,6 +228,12 @@ fun CourseTableConversionScreen(
                         desc = stringResource(Res.string.desc_export_ics_with_alarm),
                         onClick = { viewModel.onExportIcsClick() }
                     )
+                    HorizontalDivider()
+                    ConversionRow(
+                        title = stringResource(Res.string.item_lan_schedule_share),
+                        desc = stringResource(Res.string.desc_lan_schedule_share),
+                        onClick = openLanShare
+                    )
                 }
             }
 
@@ -274,9 +284,12 @@ fun CourseTableConversionScreen(
 
     ConversionDialogOverlay(
         uiState = uiState,
+        lanPeers = lanPeers,
         onDismiss = { viewModel.dismissDialog() },
         onConfirmImport = { viewModel.onImportTableSelected(it) },
-        onConfirmExport = { id, mins -> viewModel.onExportTableSelected(id, mins) }
+        onConfirmExport = { id, mins -> viewModel.onExportTableSelected(id, mins) },
+        onRefreshLanPeers = { viewModel.refreshLanPeers() },
+        onLanPeerSelected = { viewModel.onLanPeerSelected(it) }
     )
 
     shareFilePath?.let { path ->
@@ -320,3 +333,6 @@ private fun ConversionRow(
         )
     }
 }
+
+@Composable
+expect fun rememberLanSharePermissionAction(onGranted: () -> Unit): () -> Unit

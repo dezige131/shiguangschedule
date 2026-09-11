@@ -326,6 +326,13 @@
     <string name="desc_export_json_with_config">导出携带时间段配置的json课程文件</string>
     <string name="item_export_ics_file">日历文件导出</string>
     <string name="desc_export_ics_with_alarm">导出ics文件,点击生成指定提醒时间参数的文件</string>
+    <string name="item_lan_schedule_share">局域网分享课表</string>
+    <string name="desc_lan_schedule_share">发现同一局域网内的时光课表设备并发送课表</string>
+    <string name="dialog_title_lan_share">局域网分享</string>
+    <string name="desc_lan_share_waiting">本页面打开期间可接收课表。点击设备可选择要发送的课表。</string>
+    <string name="text_lan_no_devices">未发现设备，请确认两台设备处于同一局域网并打开此页面。</string>
+    <string name="toast_lan_share_success">课表发送成功</string>
+    <string name="error_lan_share_failed">课表发送失败：%1$s</string>
     <string name="section_school_import">教务导入</string>
     <string name="item_school_system_import">教务系统导入</string>
     <string name="desc_school_import_quick">从教务系统导入课程，方便快捷</string>
